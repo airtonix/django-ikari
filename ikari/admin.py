@@ -4,5 +4,5 @@ from . import models
 
 
 class DomainAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('anchored_on', 'domain', 'subdomain', 'is_public', 'is_active', 'is_primary', )
 admin.site.register(models.Domain, DomainAdmin)
