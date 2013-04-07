@@ -1,0 +1,41 @@
+!/config/ssl
+!files/default/
+# Filetypes
+# IDE Artifacts
+# Project Artifacts
+# VCS
+# Virtualenv artifacts
+#gedit backups
+*.coffee
+*.log
+*.pid
+*.py[co]
+*.sublime*
+*~
+.codeintel/
+.git/
+.hg/
+.hgignore
+.idea/
+.project
+.pydevproject
+.sass-cache/
+.settings
+.tags
+.tags_sorted_by_file
+.ve
+/build
+/cache
+/config/mode.cfg
+/config/ssl/*
+/db
+/environ
+/files
+/logs
+/node_modules
+/whoosh
+/xapian
+celerybeat-schedule
+database.sqlite3
+tags
+thumbs/
