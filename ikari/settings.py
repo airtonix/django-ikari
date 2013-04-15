@@ -19,8 +19,7 @@ DEFAULT_URL = getattr(settings, 'IKARI_DEFAULT_URL',
 CANONICAL_DOMAINS = getattr(settings, 'IKARI_CANONICAL_DOMAINS', True)
 
 SUBDOMAIN_ROOT = getattr(settings, 'IKARI_ROOT_DOMAIN', None)
-assert SUBDOMAIN_ROOT != None, _(
-    "You must create IKARI_ROOT_DOMAIN in your settings")
+assert SUBDOMAIN_ROOT != None, _("You must create IKARI_ROOT_DOMAIN in your settings")
 if not SUBDOMAIN_ROOT.startswith('.'):
     SUBDOMAIN_ROOT = '.' + SUBDOMAIN_ROOT
 SUBDOMAIN_STOPWORDS = getattr(settings, 'IKARI_SUBDOMAIN_STOPWORDS', ('www',))
