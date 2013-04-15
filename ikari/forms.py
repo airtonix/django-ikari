@@ -29,13 +29,13 @@ class DomainForm(forms.ModelForm):
         if not owner and self.instance :
             owner = self.instance.get_owner()
             if owner:
-                if not owner.has_perm('ikari.can_set_custom_domain'):
+                if not owner.has_perm('ikari.set_custom'):
                     self.fields['domain'].widget = forms.HiddenInput()
 
-                if not owner.has_perm('ikari.can_set_public_status'):
+                if not owner.has_perm('ikari.set_public'):
                     self.fields['is_public'].widget = forms.HiddenInput()
 
-                if not owner.has_perm('ikari.can_set_active_status'):
+                if not owner.has_perm('ikari.set_active'):
                     self.fields['is_active'].widget = forms.HiddenInput()
 
 
