@@ -14,20 +14,45 @@ from . import settings
 
 class DomainErrorView(TemplateView):
     template_name = "domains/error.html"
-    error = None
 
-    def get_context(self, *args, **kwargs):
-        return {
-            'error': self.error
-        }
+
+class DomainListView(mixins.DomainViewMixin, mixins.ProtectedView, ListView):
+    model = models.Domain
+    template_name = "domains/account_list.html"
+    owner_field = "owner"
+
+    def get_queryset(self, *args, **kwargs):
+        return self.model.objects.filter(**{
+            "anchored_on__{}".format(self.owner_field): self.request.user
+        })
+
+
+class DomainCreateView(mixins.DomainViewMixin, mixins.ProtectedView, CreateView):
+    model = models.Domain
+    form_class = forms.DomainForm
+    template_name = "domains/account_create.html"
+
+    # todo: create configurable callable that checks if user can create more domains
+    # todo: inject current request into form
+
+class DomainRemoveView(mixins.DomainViewMixin, mixins.ProtectedView, CreateView):
+    model = models.Domain
+    form_class = forms.DomainForm
+    template_name = "domains/account_create.html"
+
+    # todo: create configurable callable that checks if user can remove domains
+    # todo: inject current request into form
 
 class DomainUpdateView(mixins.DomainViewMixin, mixins.ProtectedView, UpdateView):
-    form_class = forms.DomainUpdateForm
+    form_class = forms.DomainForm
     template_name = 'domains/account_detail.html'
     success_url = reverse_lazy('domains-details')
 
+    # todo: create configurable callable that checks if user can remove domains
+    # todo: inject current request into form
+
     def get_object(self, *args, **kwargs):
-        return self.request.user.domain
+        return self.request.user.anchored_domains.get(pk=self.kwargs.get('pk', None))
 
     def suggest_subdomain(self, user):
         dn = base = re.sub(r'[^a-z0-9-]+', '-', user.username.lower()).strip('-')

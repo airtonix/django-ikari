@@ -18,17 +18,20 @@ from . import cache
 
 class Domain(models.Model):
 
-    domain = models.CharField(verbose_name=_(
-        'Domain'), blank=True, null=True, max_length=256, unique=True, )
-    subdomain = models.CharField(verbose_name=_(
-        'Subdomain'), max_length=256, unique=True, null=True)
+    uuid = models.CharField(verbose_name=_('UUID'), 
+        blank=True, null=True, max_length=256, unique=True, default=lambda: uuid4() )
+
+    domain = models.CharField(verbose_name=_('Domain'), 
+        blank=True, null=True, max_length=256, unique=True, )
+    subdomain = models.CharField(verbose_name=_('Subdomain'),
+        max_length=256, unique=True, null=True)
 
     is_public = models.BooleanField(verbose_name=_('Is public'), default=True)
     is_active = models.BooleanField(verbose_name=_('Is active'), default=False)
     is_primary = models.BooleanField(verbose_name=_('Is primary'), default=False)
 
-    anchored_on = models.ForeignKey(settings.ANCHORED_MODEL,
-        verbose_name=_('Anchored To'), related_name='anchored_domains')
+    anchored_on = models.OneToOneField(settings.ANCHORED_MODEL,
+        verbose_name=_('Anchored To'), related_name='domain')
 
     class Meta:
         permissions = (
@@ -82,8 +85,10 @@ class Domain(models.Model):
                 warnings.warn(
                     'Cannot resolve without settings.DOMAINS_USERSITE_URLCONF, using / path.')
                 path = '/'
+        output = '//{domain}{port}{path}'.format(domain=self.get_full_domain(), port=port, path=path)
 
-        return '//{domain}{port}{path}'.format(domain=self.get_full_domain(), port=port, path=path)
+        print "absolute_url", output
+        return output
 
 
 post_save.connect(cache.cache_thing, sender=Domain, dispatch_uid='save_domain')
