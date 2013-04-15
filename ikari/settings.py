@@ -1,6 +1,5 @@
 from django.conf import settings
-from django.contrib.sites.models import Site
-from django.utils.translation import ugettext_lazy as _
+_ = lambda x: x
 
 
 PORT_SUFFIX = ''
@@ -23,6 +22,7 @@ assert SUBDOMAIN_ROOT != None, _("You must create IKARI_ROOT_DOMAIN in your sett
 if not SUBDOMAIN_ROOT.startswith('.'):
     SUBDOMAIN_ROOT = '.' + SUBDOMAIN_ROOT
 SUBDOMAIN_STOPWORDS = getattr(settings, 'IKARI_SUBDOMAIN_STOPWORDS', ('www',))
+
 try:
     import sso
 except ImportError:

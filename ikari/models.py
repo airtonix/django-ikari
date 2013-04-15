@@ -35,9 +35,9 @@ class Domain(models.Model):
 
     class Meta:
         permissions = (
-            ('can_set_custom_domain', 'Can set custom domain'),
-            ('can_set_public_status', 'Can set public status'),
-            ('can_set_active_status', 'Can set active status'),
+            ('set_custom', 'Can set custom domain'),
+            ('set_public', 'Can set public status'),
+            ('set_active', 'Can set active status'),
         )
 
     def __unicode__(self):
@@ -87,7 +87,6 @@ class Domain(models.Model):
                 path = '/'
         output = '//{domain}{port}{path}'.format(domain=self.get_full_domain(), port=port, path=path)
 
-        print "absolute_url", output
         return output
 
 
