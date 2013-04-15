@@ -1,2 +1,3 @@
 graft *
 prune .git
+prune *.pyc

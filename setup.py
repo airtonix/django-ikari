@@ -9,5 +9,8 @@ setup(name="django-ikari",
            author_email="airtonix@gmail.com",
            packages=find_packages(),
            include_package_data=True,
+           install_requires=[
+           	'django-appconf==0.4.1',
+           ],
 )
 
