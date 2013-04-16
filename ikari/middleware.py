@@ -57,11 +57,10 @@ class DomainsMiddleware:
             # if host.endswith(settings.SUBDOMAIN_ROOT):
 
             # force logout of non-member and non-owner from non-public site
-            if request.user.is_authenticated() and not domain.is_public:
-                if not request.user.is_staff or request.user != domain.get_owner():
-                    logout(request)
-                    url = settings.DEFAULT_URL.rstrip("/")+reverse('domains-not-public')
-                    return HttpResponseRedirect(url)
+            # if not domain.user_can_access(request.user):
+            #     logout(request)
+            #     url = settings.DEFAULT_URL.rstrip("/")+reverse('domains-not-public')
+            #     return HttpResponseRedirect(url)
 
 
             # call request hookanchored_domains

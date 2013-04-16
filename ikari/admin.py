@@ -1,10 +1,23 @@
 from django.contrib import admin
+from django import forms
 
 from . import settings
 from . import models
 
+class DomainForm(forms.ModelForm):
+    class Meta:
+        model = models.Domain
+
+    def clean_domain(self):
+        domain = self.cleaned_data['domain']
+        if domain == '':
+            domain = None
+        return domain
+
 
 class DomainAdmin(admin.ModelAdmin):
+
+    form = DomainForm
 
     def anchored_on(instance):
         return u"{thing} ({thing_type})".format(

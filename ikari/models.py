@@ -18,10 +18,10 @@ from . import cache
 
 class Domain(models.Model):
 
-    uuid = models.CharField(verbose_name=_('UUID'), 
+    uuid = models.CharField(verbose_name=_('UUID'),
         blank=True, null=True, max_length=256, unique=True, default=lambda: uuid4() )
 
-    domain = models.CharField(verbose_name=_('Domain'), 
+    domain = models.CharField(verbose_name=_('Domain'),
         blank=True, null=True, max_length=256, unique=True, )
     subdomain = models.CharField(verbose_name=_('Subdomain'),
         max_length=256, unique=True, null=True)
@@ -40,6 +40,11 @@ class Domain(models.Model):
             ('set_active', 'Can set active status'),
         )
 
+    def save(self):
+        if self.domain == "" or self.domain == None:
+            self.domain = None
+        return super(Domain, self).save()
+
     def __unicode__(self):
         return self.get_name()
 
@@ -55,6 +60,29 @@ class Domain(models.Model):
             output = self.subdomain + settings.SUBDOMAIN_ROOT
 
         return "{}".format(output)
+
+    def user_can_access(self, user):
+
+        if not user.is_active:
+            print user, "not active"
+            return False
+
+        if user.is_staff:
+            print user, "is staff"
+            return True
+
+        if user.is_superuser:
+            print user, "is superuser"
+            return True
+
+        if self.anchored_on:
+            print self, "is anchored to", self.anchored_on
+            members = getattr(self.anchored_on, settings.ANCHORED_MODEL_MEMBER_ATTR)
+            if user is self.get_owner() or user in members:
+                return True
+            print user, "is owner or member"
+
+        return False
 
     def get_owner(self):
         # test if related object is the user model

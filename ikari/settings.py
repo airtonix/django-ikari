@@ -34,6 +34,7 @@ ANCHORED_MODEL = getattr(settings, 'IKARI_ANCHORED_OBJECT', u'auth.User')
 #if ANCHORED_MODEL is not an instance of "auth.User" then you need to supply the attr of
 # ANCHORED_MODEL that points us to an instance of 'auth.User'. it can be a callable.
 ANCHORED_MODEL_OWNER_ATTR = getattr(settings, 'IKARI_ANCHORED_OBJECT_OWNER_ATTR', u'owner')
+ANCHORED_MODEL_MEMBER_ATTR = getattr(settings, 'IKARI_ANCHORED_OBJECT_MEMBER_ATTR', u'members')
 
 CACHE_KEY_PREFIX = getattr(settings, 'IKARI_CACHE_PREFIX', u'ikari:')
 CACHE_KEY_ALL = getattr(settings,'IKARI_CACHE_KEY_ALL', u'domain:all')
