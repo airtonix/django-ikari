@@ -51,17 +51,18 @@ class DomainsMiddleware:
             if settings.ACCOUNT_URLCONF:
                 request.urlconf = settings.ACCOUNT_URLCONF
 
-            # if not domain.is_active:
-            #     url = settings.DEFAULT_URL.rstrip("/")+reverse('domains-inactive')
 
             # if host.endswith(settings.SUBDOMAIN_ROOT):
 
             # force logout of non-member and non-owner from non-public site
-            # if not domain.user_can_access(request.user):
-            #     logout(request)
-            #     url = settings.DEFAULT_URL.rstrip("/")+reverse('domains-not-public')
-            #     return HttpResponseRedirect(url)
-
+            if hasattr(request.user, 'pk') > 0 and request.user.is_authenticated :
+                print request.user, "is authenticated"
+                if not domain.user_can_access(request.user):
+                    url = settings.DEFAULT_URL.rstrip("/")
+                    if not domain.is_public:
+                        url = url + reverse('domains-inactive')
+                    logout(request)
+                    return HttpResponseRedirect(url)
 
             # call request hookanchored_domains
             for receiver, retval in signals.domain_request.send(sender=request, request=request, domain=domain):

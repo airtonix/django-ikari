@@ -10,6 +10,8 @@ from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse, reverse_lazy
 from django.template.defaultfilters import slugify
 
+from guardian.shortcuts import assign_perm, remove_perm, get_perms
+
 from . import signals
 from . import fields
 from . import settings
@@ -63,26 +65,15 @@ class Domain(models.Model):
 
     def user_can_access(self, user):
 
-        if not user.is_active:
-            print user, "not active"
+        if not self.is_active:
             return False
 
-        if user.is_staff:
-            print user, "is staff"
-            return True
-
-        if user.is_superuser:
-            print user, "is superuser"
-            return True
-
-        if self.anchored_on:
-            print self, "is anchored to", self.anchored_on
-            members = getattr(self.anchored_on, settings.ANCHORED_MODEL_MEMBER_ATTR)
-            if user is self.get_owner() or user in members:
+        if not self.is_public:
+            if user.pk > 0 and user.is_active:
                 return True
-            print user, "is owner or member"
+            return False
 
-        return False
+        return True
 
     def get_owner(self):
         # test if related object is the user model
