@@ -7,7 +7,7 @@
 # Virtualenv artifacts
 #gedit backups
 *.coffee
-*.egg-info
+*.egg-info/
 *.log
 *.pid
 *.py[co]
