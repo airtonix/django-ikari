@@ -1,3 +1,5 @@
+import logging
+
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.utils.cache import patch_vary_headers
@@ -6,11 +8,13 @@ from django.contrib.auth import logout
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import User, Group
 
-
 from . import models
 from . import signals
 from . import settings
 from . import cache
+
+logger = logging.getLogger(__name__)
+logger.addHandler(settings.null_handler)
 
 def get_domain_list(facet='domain'):
     return models.Domain.objects.values_list(facet, flat=True)
@@ -56,8 +60,10 @@ class DomainsMiddleware:
 
             # force logout of non-member and non-owner from non-public site
             if hasattr(request.user, 'pk') > 0 and request.user.is_authenticated :
-                print request.user, "is authenticated"
-                if not domain.user_can_access(request.user):
+                # logger.debug(request.user, "is authenticated")
+                can_access = domain.user_can_access(request.user)
+                # logger.debug(request.user, "can_access", can_access)
+                if not can_access:
                     url = settings.DEFAULT_URL.rstrip("/")
                     if not domain.is_public:
                         url = url + reverse('domains-inactive')
@@ -68,7 +74,6 @@ class DomainsMiddleware:
             for receiver, retval in signals.domain_request.send(sender=request, request=request, domain=domain):
                 if isinstance(retval, HttpResponse):
                     return retval
-
 
     def process_response(self, request, response):
 

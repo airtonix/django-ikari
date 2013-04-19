@@ -1,4 +1,5 @@
 import re
+import logging
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -12,6 +13,9 @@ from django.utils.decorators import method_decorator
 
 from . import models
 from . import settings
+
+logger = logging.getLogger(__name__)
+logger.addHandler(settings.null_handler)
 
 
 class DomainViewMixin(object):

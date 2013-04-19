@@ -1,6 +1,7 @@
 import warnings
 import os
 from uuid import uuid4
+import logging
 
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
@@ -17,6 +18,9 @@ from . import fields
 from . import settings
 from . import cache
 
+
+logger = logging.getLogger(__name__)
+logger.addHandler(settings.null_handler)
 
 class Domain(models.Model):
 

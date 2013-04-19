@@ -1,3 +1,4 @@
+import logging
 from django.conf import settings
 _ = lambda x: x
 
@@ -48,3 +49,10 @@ ERRORMSG_NOPERMISSION = getattr(settings, "IKARI_ERRORMSG_NOPERMISSION",  _('Ins
 ERRORCONTEXT_INACTIVE = {'title': _("Domain Inactive"), 'message': _("Looks like you're trying to access a domain that's inactive")}
 ERRORCONTEXT_INVALID = {'title': _("Domain Invalid"), 'message': _("No such domain registered here")}
 ERRORCONTEXT_PRIVATE = {'title': _("Domain Private"), 'message': _("This domain is private. The owner hasn't made it public yet.")}
+
+
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
+null_handler = NullHandler()

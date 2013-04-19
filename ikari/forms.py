@@ -1,5 +1,6 @@
 import re
 import socket
+import logging
 
 from django import forms
 from django.contrib.auth.models import User
@@ -14,6 +15,8 @@ from . import cache
 
 DOMAIN_RE = re.compile(r'^[a-z0-9][a-z0-9-]*\.[a-z0-9-.]+[a-z0-9]$')
 SUBDOMAIN_RE = re.compile(r'^[a-z0-9][a-z0-9-]+[a-z0-9]$')
+logger = logging.getLogger(__name__)
+logger.addHandler(settings.null_handler)
 
 
 class DomainForm(forms.ModelForm):

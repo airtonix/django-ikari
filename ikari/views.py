@@ -1,4 +1,5 @@
 import re
+import logging
 
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
@@ -10,6 +11,9 @@ from . import forms
 from . import models
 from . import mixins
 from . import settings
+
+logger = logging.getLogger(__name__)
+logger.addHandler(settings.null_handler)
 
 
 class DomainErrorView(TemplateView):

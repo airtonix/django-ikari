@@ -1,8 +1,13 @@
+import logging
+
 from django.contrib import admin
 from django import forms
 
 from . import settings
 from . import models
+
+logger = logging.getLogger(__name__)
+logger.addHandler(settings.null_handler)
 
 class DomainForm(forms.ModelForm):
     class Meta:
@@ -36,7 +41,7 @@ class DomainAdmin(admin.ModelAdmin):
 
     def verify_domain(instance, request, queryset):
         for domain in queryset:
-            print domain
+            logger.debug("attempting to verify domain:", domain)
     verify_domain.short_description = 'Query the domain txt record for the uuid.'
 
     def disable_domain(instance, request, queryset):

@@ -1,9 +1,14 @@
 import random
 import hashlib
+import logging
+
 from django.core.cache import cache
 
 from . import settings
 
+
+logger = logging.getLogger(__name__)
+logger.addHandler(settings.null_handler)
 
 def format_key(key, value=None):
     if value is None:
@@ -19,7 +24,7 @@ def cache_thing(**kwargs):
         thing = kwargs.get('instance')
         key = format_key(settings.CACHE_KEY_ITEM, thing.get_slug())
         cache.add(key, thing)
-        print "Cached {} with {}".format(thing, key)
+        logger.debug("Cached {} with {}".format(thing, key))
 
 
 def get_thing(**kwargs):
@@ -49,7 +54,7 @@ def get_thing(**kwargs):
             if result == None and callable(update):
                 result = update()
                 cache.add(key, result)
-            print "Retrieving Cache Key {} result: {}".format(key, thing)
+            logger.debug("Retrieving Cache Key {} result: {}".format(key, thing))
             return bool(query in result)
 
         elif facet == 'item':
@@ -59,7 +64,7 @@ def get_thing(**kwargs):
             if thing == None and callable(update):
                 thing = update()
                 cache.add(key, thing)
-            print "Retrieving Cache Key {} result: {}".format(key, thing)
+            logger.debug("Retrieving Cache Key {} result: {}".format(key, thing))
             return thing
 
 

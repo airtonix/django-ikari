@@ -1,16 +1,18 @@
 # http://www.djangosnippets.org/snippets/636/
 import os
 import uuid
+import logging
 
 from django import forms
-from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext as _
 from django.utils.safestring import SafeUnicode
 from django.core.urlresolvers import reverse, reverse_lazy
 
-from . import settings as app_settings
+from . import settings
 
+logger = logging.getLogger(__name__)
+logger.addHandler(settings.null_handler)
 
 
 class SubdomainInput(forms.TextInput):

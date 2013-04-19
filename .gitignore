@@ -7,6 +7,7 @@
 # Virtualenv artifacts
 #gedit backups
 *.coffee
+*.egg-info
 *.log
 *.pid
 *.py[co]
@@ -23,6 +24,7 @@
 .settings
 .tags
 .tags_sorted_by_file
+.tox/
 .ve
 /build
 /cache
@@ -37,5 +39,6 @@
 /xapian
 celerybeat-schedule
 database.sqlite3
+dist/
 tags
 thumbs/
