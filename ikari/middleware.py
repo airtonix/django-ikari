@@ -3,30 +3,32 @@ import logging
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.utils.cache import patch_vary_headers
-from django.views.decorators.cache import never_cache
 from django.contrib.auth import logout
-from django.contrib.sites.models import Site
-from django.contrib.auth.models import User, Group
 
 from . import models
 from . import signals
 from . import settings
 from . import cache
 
+
 logger = logging.getLogger(__name__)
 logger.addHandler(settings.null_handler)
+
 
 def get_domain_list(facet='domain'):
     return models.Domain.objects.values_list(facet, flat=True)
 
+
 def get_domain(query_dict=None):
     return models.Domain.objects.get(**query_dict)
+
 
 class DomainsMiddleware:
 
     def process_request(self, request):
         host = request.META.get('HTTP_HOST', None)
-        if host == None : return
+        if host is None:
+            return
 
         # strip port suffix if present
         if settings.PORT_SUFFIX and host.endswith(settings.PORT_SUFFIX):
@@ -34,9 +36,9 @@ class DomainsMiddleware:
 
         try:
             if host.endswith(settings.SUBDOMAIN_ROOT):
-                query_dict = {"subdomain": host[:-len(settings.SUBDOMAIN_ROOT)] }
+                query_dict = {"subdomain": host[:-len(settings.SUBDOMAIN_ROOT)]}
             else:
-                query_dict = {"domain": host }
+                query_dict = {"domain": host}
 
             domain = cache.get_thing(facet='item', query=host, update=lambda: get_domain(query_dict))
 
@@ -55,11 +57,8 @@ class DomainsMiddleware:
             if settings.ACCOUNT_URLCONF:
                 request.urlconf = settings.ACCOUNT_URLCONF
 
-
-            # if host.endswith(settings.SUBDOMAIN_ROOT):
-
             # force logout of non-member and non-owner from non-public site
-            if hasattr(request.user, 'pk') > 0 and request.user.is_authenticated :
+            if hasattr(request.user, 'pk') > 0 and request.user.is_authenticated:
                 # logger.debug(request.user, "is authenticated")
                 can_access = domain.user_can_access(request.user)
                 # logger.debug(request.user, "can_access", can_access)
