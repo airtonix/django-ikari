@@ -7,7 +7,6 @@ from django.utils.decorators import method_decorator
 from . import models
 from . import settings
 
-
 logger = logging.getLogger(__name__)
 logger.addHandler(settings.null_handler)
 
