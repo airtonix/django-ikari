@@ -19,7 +19,7 @@ DEFAULT_URL = getattr(settings, 'IKARI_DEFAULT_URL',
 CANONICAL_DOMAINS = getattr(settings, 'IKARI_CANONICAL_DOMAINS', True)
 
 SUBDOMAIN_ROOT = getattr(settings, 'IKARI_ROOT_DOMAIN', None)
-assert SUBDOMAIN_ROOT != None, _("You must create IKARI_ROOT_DOMAIN in your settings")
+assert SUBDOMAIN_ROOT is not None, _("You must create IKARI_ROOT_DOMAIN in your settings")
 if not SUBDOMAIN_ROOT.startswith('.'):
     SUBDOMAIN_ROOT = '.' + SUBDOMAIN_ROOT
 SUBDOMAIN_STOPWORDS = getattr(settings, 'IKARI_SUBDOMAIN_STOPWORDS', ('www',))
@@ -38,7 +38,7 @@ ANCHORED_MODEL_OWNER_ATTR = getattr(settings, 'IKARI_ANCHORED_OBJECT_OWNER_ATTR'
 ANCHORED_MODEL_MEMBER_ATTR = getattr(settings, 'IKARI_ANCHORED_OBJECT_MEMBER_ATTR', u'members')
 
 CACHE_KEY_PREFIX = getattr(settings, 'IKARI_CACHE_PREFIX', u'ikari:')
-CACHE_KEY_ALL = getattr(settings,'IKARI_CACHE_KEY_ALL', u'domain:all')
+CACHE_KEY_ALL = getattr(settings, 'IKARI_CACHE_KEY_ALL', u'domain:all')
 CACHE_KEY_ITEM = getattr(settings, 'IKARI_CACHE_KEY_ITEM', u'domain:{}')
 
 ERRORMSG_UNAVAILABLE = getattr(settings,  "IKARI_ERRORMSG_UNAVAILABLE",   _('This hostname is unavailable.'))

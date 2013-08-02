@@ -11,4 +11,3 @@ logger.addHandler(settings.null_handler)
 # HttpResponse instance, this instance will be returned from the
 # request.
 domain_request = Signal()
-
