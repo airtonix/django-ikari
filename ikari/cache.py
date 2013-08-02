@@ -1,4 +1,3 @@
-import random
 import hashlib
 import logging
 
@@ -9,6 +8,7 @@ from . import settings
 
 logger = logging.getLogger(__name__)
 logger.addHandler(settings.null_handler)
+
 
 def format_key(key, value=None):
     if value is None:
@@ -44,24 +44,23 @@ def get_thing(**kwargs):
     query = kwargs.get('query', None)
     update = kwargs.get('update', None)
 
-
     if facet:
         facet = facet.lower()
         if facet == 'all':
             key = format_key(settings.CACHE_KEY_ALL)
             # is the query in the list?
             result = cache.get(key)
-            if result == None and callable(update):
+            if result is None and callable(update):
                 result = update()
                 cache.add(key, result)
-            logger.debug("Retrieving Cache Key {} result: {}".format(key, thing))
+            logger.debug("Retrieving Cache Key {} result: {}".format(key, result))
             return bool(query in result)
 
         elif facet == 'item':
             key = format_key(settings.CACHE_KEY_ITEM, query)
             # give me the item matching the query
             thing = cache.get(key)
-            if thing == None and callable(update):
+            if thing is None and callable(update):
                 thing = update()
                 cache.add(key, thing)
             logger.debug("Retrieving Cache Key {} result: {}".format(key, thing))
@@ -71,8 +70,9 @@ def get_thing(**kwargs):
 def uncache_thing(**kwargs):
     """ Simple scorched earth policy on cache items. """
     thing = kwargs.get('instance')
+    name = getattr(thing, 'name', thing.get_name())
     data = {
-        format_key(settings.CACHE_KEY_ITEM, thing.name): None,
+        format_key(settings.CACHE_KEY_ITEM, name): None,
         format_key(settings.CACHE_KEY_ALL): None
     }
     cache.set_many(data, 5)
