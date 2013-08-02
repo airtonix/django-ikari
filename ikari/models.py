@@ -1,20 +1,14 @@
 import warnings
-import os
 from uuid import uuid4
 import logging
 
 from django.contrib.auth.models import User
-from django.contrib.sites.models import Site
 from django.db import models
 from django.db.models.signals import post_save, post_delete
 from django.utils.translation import ugettext_lazy as _
-from django.core.urlresolvers import reverse, reverse_lazy
+from django.core.urlresolvers import reverse
 from django.template.defaultfilters import slugify
 
-from guardian.shortcuts import assign_perm, remove_perm, get_perms
-
-from . import signals
-from . import fields
 from . import settings
 from . import cache
 
@@ -22,22 +16,24 @@ from . import cache
 logger = logging.getLogger(__name__)
 logger.addHandler(settings.null_handler)
 
+
 class Domain(models.Model):
 
     uuid = models.CharField(verbose_name=_('UUID'),
-        blank=True, null=True, max_length=256, unique=True, default=lambda: uuid4() )
+                            blank=True, null=True, max_length=256,
+                            unique=True, default=lambda: uuid4())
 
     domain = models.CharField(verbose_name=_('Domain'),
-        blank=True, null=True, max_length=256, unique=True, )
+                              blank=True, null=True, max_length=256, unique=True, )
     subdomain = models.CharField(verbose_name=_('Subdomain'),
-        max_length=256, unique=True, null=True)
+                                 max_length=256, unique=True, null=True)
 
     is_public = models.BooleanField(verbose_name=_('Is public'), default=True)
     is_active = models.BooleanField(verbose_name=_('Is active'), default=False)
     is_primary = models.BooleanField(verbose_name=_('Is primary'), default=False)
 
     anchored_on = models.OneToOneField(settings.ANCHORED_MODEL,
-        verbose_name=_('Anchored To'), related_name='domain')
+                                       verbose_name=_('Anchored To'), related_name='domain')
 
     class Meta:
         permissions = (
@@ -47,7 +43,7 @@ class Domain(models.Model):
         )
 
     def save(self):
-        if self.domain == "" or self.domain == None:
+        if self.domain is "" or self.domain is None:
             self.domain = None
         return super(Domain, self).save()
 
