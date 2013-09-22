@@ -4,11 +4,12 @@ from django.contrib.auth.decorators import login_required
 from django.views.generic import View
 from django.utils.decorators import method_decorator
 
+from .conf import settings, null_handler
 from . import models
-from . import settings
+
 
 logger = logging.getLogger(__name__)
-logger.addHandler(settings.null_handler)
+logger.addHandler(null_handler)
 
 
 class DomainViewMixin(object):

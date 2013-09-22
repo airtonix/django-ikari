@@ -8,15 +8,16 @@ from django.utils.safestring import SafeUnicode
 from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse, reverse_lazy
 
+from .conf import settings, null_handler
 from . import models
-from . import settings
 from . import fields
 from . import cache
+
 
 DOMAIN_RE = re.compile(r'^[a-z0-9][a-z0-9-]*\.[a-z0-9-.]+[a-z0-9]$')
 SUBDOMAIN_RE = re.compile(r'^[a-z0-9][a-z0-9-]+[a-z0-9]$')
 logger = logging.getLogger(__name__)
-logger.addHandler(settings.null_handler)
+logger.addHandler(null_handler)
 
 
 class DomainForm(forms.ModelForm):
@@ -29,7 +30,7 @@ class DomainForm(forms.ModelForm):
         super(DomainForm, self).__init__(*args, **kwargs)
         owner = kwargs.get("user", None)
         self.fields['subdomain'].widget = fields.SubdomainInput()
-        if not owner and self.instance :
+        if not owner and self.instance:
             owner = self.instance.get_owner()
             if owner:
                 if not owner.has_perm('ikari.set_custom'):
@@ -41,7 +42,6 @@ class DomainForm(forms.ModelForm):
                 if not owner.has_perm('ikari.set_active'):
                     self.fields['is_active'].widget = forms.HiddenInput()
 
-
     def clean_subdomain(self):
         subdomain = self.cleaned_data['subdomain'].lower().strip()
 
@@ -52,7 +52,7 @@ class DomainForm(forms.ModelForm):
             if re.search(pattern, subdomain, re.I):
                 raise forms.ValidationError(settings.ERRORMSG_UNAVAILABLE)
 
-        domain = cache.get_thing('item', subdomain+settings.SUBDOMAIN_ROOT)
+        domain = cache.get_thing('item', subdomain + settings.SUBDOMAIN_ROOT)
         if domain and domain != self.instance:
             raise forms.ValidationError(settings.ERRORMSG_UNAVAILABLE)
 
@@ -84,7 +84,7 @@ class DomainForm(forms.ModelForm):
                             self._errors['domain'] = forms.util.ErrorList([
                                 _('Domain %(domain)s does not resolve to %(ip)s.') % {'domain': domain_str, 'ip': settings.DOMAINS_IP}])
 
-            except socket.error, msg:
+            except socket.error as msg:
                 self._errors['domain'] = forms.util.ErrorList([
                     _('Cannot resolve domain %(domain)s: %(error_string)s') % {'domain': domain_str, 'error_string': msg}])
 
@@ -99,4 +99,3 @@ class DomainForm(forms.ModelForm):
         if self.instance.owner.has_perm('domains.can_set_active_status'):
             return self.cleaned_data['is_public']
         return self.instance.is_public
-

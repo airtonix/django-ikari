@@ -20,13 +20,12 @@ Table of Contents
 
 1 Installation
 ~~~~~~~~~~~~~~
-  Copy or symlink `ikari/' subdirectory to Python path (`setup.py'
-  script for automated installation will be supplied later on). Module
-  contents are available in the `domains' module.
 
-  In order to use application, add `domains' to INSTALLED_APPS in
+ `pip install django-ikari`
+
+  In order to use application, add `ikari' to INSTALLED_APPS in
   Django project `settings.py' file,
-  `domains.middleware.DomainsMiddleware' to MIDDLEWARE_CLASSES
+  `ikari.middleware.DomainsMiddleware' to MIDDLEWARE_CLASSES
   after `AuthenticationMiddleware', and configure application settings
   described in the next section.
 
