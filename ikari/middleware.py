@@ -3,6 +3,7 @@ import logging
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.utils.cache import patch_vary_headers
+from django.utils.encoding import iri_to_uri
 from django.contrib.auth import logout
 from django.db.models.query import Q
 
@@ -20,8 +21,17 @@ IkariSiteModel = get_model(*settings.IKARI_SITE_MODEL.split("."))
 
 class DomainsMiddleware:
 
+    def redirect_to_error(self, request, urlname):
+        self.urlconf = settings.ROOT_URLCONF
+        path = reverse(urlname)
+        current_uri = '%s://%s%s' % ('https' if request.is_secure() else 'http',
+                                         settings.IKARI_MASTER_DOMAIN, path)
+
+        return HttpResponseRedirect(iri_to_uri(current_uri))
+
     def process_request(self, request):
-        host = request.META.get('HTTP_HOST', None)
+        host = request.get_host()
+
         if host is None:
             return
 
@@ -32,28 +42,24 @@ class DomainsMiddleware:
         try:
             site = cache.get_thing(facet='item', query=host,
                     update=lambda: IkariSiteModel.objects.get(fqdn=host))
-
         except IkariSiteModel.DoesNotExist:
             # if it's not the MASTER_DOMAIN
             if host != settings.IKARI_MASTER_DOMAIN:
                 # redirect to error page
-                return HttpResponseRedirect(settings.IKARI_URL_ERROR_DOESNTEXIST)
+                return self.redirect_to_error(request, settings.IKARI_URL_ERROR_DOESNTEXIST)
 
         else:
             # set up request parameters
-            request.domain = domain
-            request.urlconf = settings.IKARI_SITE_URLCONF
-
-            user = request.user
+            user = getattr(request, 'user', None)
             can_access = site.user_can_access(user)
 
             # if it's not active, then only allow staff through
-            if not domain.is_active and not can_access:
-                return HttpResponseRedirect(settings.IKARI_URL_ERROR_INACTIVE)
+            if not site.is_active and not can_access:
+                return self.redirect_to_error(request, settings.IKARI_URL_ERROR_INACTIVE)
 
             # if it's not published, then only allow site owner and members through
-            if not domain.is_public and not can_access:
-                return HttpResponseRedirect(settings.IKARI_URL_ERROR_PRIVATE)
+            if not site.is_public and not can_access:
+                return self.redirect_to_error(settings.IKARI_URL_ERROR_PRIVATE)
 
             # other wise, call the 'site_request' signal to allow project level integrated
             # checks to be performed. requires a HttpResponse type to successfully continue.
@@ -61,8 +67,10 @@ class DomainsMiddleware:
                 if isinstance(return_value, HttpResponse):
                     return return_value
                 else:
-                    return HttpResponseRedirect(settings.IKARI_URL_ERROR_UNKNOWN)
+                    return self.redirect_to_error(request, settings.IKARI_URL_ERROR_UNKNOWN)
 
+            request.site = site
+            request.urlconf = settings.IKARI_SITE_URLCONF
 
     def process_response(self, request, response):
 

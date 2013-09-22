@@ -11,4 +11,7 @@ logger.addHandler(null_handler)
 # Called by middleware on every request; If any receiver returns a
 # HttpResponse instance, this instance will be returned from the
 # request.
-domain_request = Signal()
+site_request = Signal(providing_args=['site', 'request'])
+site_created = Signal(providing_args=['site', ])
+site_updated = Signal(providing_args=['site', ])
+site_deleted = Signal(providing_args=['site', ])

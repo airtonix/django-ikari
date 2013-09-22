@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{{ Site.name }}</title>
+    </head>
+    <body>
+        <div class="site-wrapper">
+            <header>
+                <h1>{{ Site.name }}</h1>
+                {% block site-header %}{% endblock %}
+            </header>
+            <article>
+                {% block site-content %}{% endblock %}
+            </article>
+            <footer>
+                {% block site-footer %}{% endblock %}
+            </footer>
+        </div>
+    </body>
+</html>

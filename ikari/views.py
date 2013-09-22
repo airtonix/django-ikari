@@ -11,15 +11,15 @@ logger.addHandler(null_handler)
 
 class DomainErrorView(TemplateView):
     template_name = "ikari/error.html"
-    message = None
 
-    def get_context_data(self, **kwargs):
-        return kwargs.update({
-            'message': self.message
-            })
 
 class SiteHomeView(TemplateView):
     template_name="ikari/site.html"
+
+    def get_context_data(self, **kwargs):
+        return {
+            "Site": self.request.site
+        }
 
 
 class SiteUpdateView(FormView):

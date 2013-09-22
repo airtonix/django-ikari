@@ -14,8 +14,8 @@ MESSAGES = {
 
 
 class IkariAppConf(AppConf):
-    # ACCOUNT_URLCONF = 'ikari.account.urls'
-    SITE_URLCONF = 'ikari.subdomain.urls'
+    ACCOUNT_URLCONF = 'ikari.urls.private'
+    SITE_URLCONF = 'ikari.urls.sites'
 
     # This needs to point at the domain
     # of your main project, typically
@@ -35,16 +35,11 @@ class IkariAppConf(AppConf):
     # Redirect users to errorpage when errors happen?
     REDIRECT_ONERROR = True
 
-    # This is mainly for local development
-    # but in some cases you might need it for
-    # production
-    PORT = None # use default http spec
-    PORT_SUFFIX = None
-
-    CANONICAL_DOMAINS = True
-    # internal use.
     SUBDOMAIN_ROOT = None
 
+    # See ikari.backends.domain_verification for a list of
+    # existing backends
+    DOMAIN_VERIFICATION_BACKEND='ikari.backends.domain_verification.FQDNVerificationBackend'
     USE_SSO = False
 
     CACHE_KEY_PREFIX = u'ikari:'
@@ -59,7 +54,6 @@ class IkariAppConf(AppConf):
     #
     ERRORMSG_UNAVAILABLE = _('This hostname is unavailable.')
     ERRORMSG_INVALIDCHARS = _('Invalid characters in hostname.  You may only use a-z, 0-9, and "-".')
-    ERRORMSG_PROTECTEDTLD = _('Hostnames cannot be a subdomain of {}.'.format(SUBDOMAIN_ROOT))
     ERRORMSG_NOPERMISSION = _('Insufficient permissions.')
 
     # Context used for error templates
@@ -68,6 +62,7 @@ class IkariAppConf(AppConf):
     ERRORCONTEXT_INACTIVE = {'title': _("Domain Inactive"), 'message': _("Looks like you're trying to access a domain that's inactive")}
     ERRORCONTEXT_INVALID = {'title': _("Domain Invalid"), 'message': _("No such domain registered here")}
     ERRORCONTEXT_PRIVATE = {'title': _("Domain Private"), 'message': _("This domain is private. The owner hasn't made it public yet.")}
+    ERRORCONTEXT_UNKNOWN = {'title': _("Oops"), 'message': _("Something weird happened.")}
 
     def configure_site_urlconf(self, value):
         if not value:

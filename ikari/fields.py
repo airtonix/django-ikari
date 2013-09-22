@@ -22,7 +22,7 @@ class SubdomainInput(forms.TextInput):
         self.attrs = {"style": "width: 10em; display:inline-block;"}
         return SafeUnicode(
             super(SubdomainInput, self).render(*args, **kwargs)
-            + app_settings.SUBDOMAIN_ROOT)
+            + settings.IKARI_SUBDOMAIN_ROOT)
 
 
 class UUIDField(models.CharField):

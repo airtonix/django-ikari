@@ -20,6 +20,10 @@ default_settings.update(dict(
         'ikari',
         'unit_tests'
     ],
+    MIDDLEWARE_CLASSES=[
+        'ikari.middleware.DomainsMiddleware',
+    ],
+
     IKARI_MASTER_DOMAIN='ikari.local',
     IKARI_ACCOUNT_URL='ikari.urls.private',
     IKARI_USERSITE_URLCONF='ikari.urls.sites',
