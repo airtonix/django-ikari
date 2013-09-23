@@ -57,7 +57,6 @@ class BaseSite(models.Model):
     is_primary = models.BooleanField(
         verbose_name=_('Is primary'), default=True)
 
-
     class Meta:
         abstract = True
         permissions = (
@@ -70,13 +69,12 @@ class BaseSite(models.Model):
         super(BaseSite, self).__init__(*args, **kwargs)
         self.verification_backend = VerficationBackend(self)
 
-
     def __unicode__(self):
         return self.name
 
     def save(self):
         if self.fqdn is "" or self.fqdn is None:
-            self.fqdn = self.get_slug()
+            self.fqdn = self.slug
 
         if not "." in self.fqdn:
             # if fqdn is a valid host name, otherwise we'll try
@@ -84,28 +82,30 @@ class BaseSite(models.Model):
             separator = "."
             if settings.IKARI_SUBDOMAIN_ROOT.startswith("."):
                 separator = ""
-            self.fqdn = separator.join([self.fqdn, settings.IKARI_SUBDOMAIN_ROOT])
+            self.fqdn = separator.join(
+                [self.fqdn, settings.IKARI_SUBDOMAIN_ROOT])
 
         # should raise an exception if it's not valid.
         self.verification_backend.is_valid()
 
         return super(BaseSite, self).save()
 
-    def get_slug(self):
+    @property
+    def slug(self):
         return slugify(self.name)
 
     def user_can_access(self, user):
+        is_valid_user = user and user.is_authenticated and user.is_active
         # staff and superuser can always access the site
-        if user and user.is_active and (user.is_superuser or use.is_staff):
+        if is_valid_user and (user.is_superuser or user.is_staff):
             return True
 
         # if the site is disabled (only site staff can toggle this)
-        elif not self.is_active:
+        if not self.is_active:
             return False
 
         # if the site isn't in a public state yet
-        elif not self.is_public and user and user.is_authenticated and user.is_active:
-
+        if not self.is_public and is_valid_user:
             # if the user is allowed to manage the site
             if user in (self.get_owner(), self.get_moderators()):
                 return True

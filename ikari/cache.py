@@ -22,7 +22,7 @@ def cache_thing(**kwargs):
     # action is included for m2m_changed signal. Only cache on the post_*.
     if not action or action in ['post_add', 'post_remove', 'post_clear']:
         thing = kwargs.get('instance')
-        key = format_key(settings.IKARI_CACHE_KEY_ITEM, thing.get_slug())
+        key = format_key(settings.IKARI_CACHE_KEY_ITEM, thing.slug)
         cache.add(key, thing)
         logger.debug("Cached {} with {}".format(thing, key))
 
@@ -72,7 +72,7 @@ def get_thing(**kwargs):
 def uncache_thing(**kwargs):
     """ Simple scorched earth policy on cache items. """
     thing = kwargs.get('instance')
-    name = getattr(thing, 'name', thing.get_name())
+    name = getattr(thing, 'name', thing.slug)
     data = {
         format_key(settings.IKARI_CACHE_KEY_ITEM, name): None,
         format_key(settings.IKARI_CACHE_KEY_ALL): None

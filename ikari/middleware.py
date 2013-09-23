@@ -25,28 +25,27 @@ class DomainsMiddleware:
         self.urlconf = settings.ROOT_URLCONF
         path = reverse(urlname)
         current_uri = '%s://%s%s' % ('https' if request.is_secure() else 'http',
-                                         settings.IKARI_MASTER_DOMAIN, path)
+                                     settings.IKARI_MASTER_DOMAIN, path)
 
         return HttpResponseRedirect(iri_to_uri(current_uri))
 
     def process_request(self, request):
         host = request.get_host()
 
-        if host is None:
-            return
-
         # strip port suffix if present
         if ":" in host:
             host = host[:host.index(":")]
 
+        # if it's the MASTER_DOMAIN, or there isn't a host set then bail out now.
+        if host is None or host is settings.IKARI_MASTER_DOMAIN:
+            return
+
         try:
             site = cache.get_thing(facet='item', query=host,
-                    update=lambda: IkariSiteModel.objects.get(fqdn=host))
+                                   update=lambda: IkariSiteModel.objects.get(fqdn=host))
+
         except IkariSiteModel.DoesNotExist:
-            # if it's not the MASTER_DOMAIN
-            if host != settings.IKARI_MASTER_DOMAIN:
-                # redirect to error page
-                return self.redirect_to_error(request, settings.IKARI_URL_ERROR_DOESNTEXIST)
+            return self.redirect_to_error(request, settings.IKARI_URL_ERROR_DOESNTEXIST)
 
         else:
             # set up request parameters
@@ -57,12 +56,14 @@ class DomainsMiddleware:
             if not site.is_active and not can_access:
                 return self.redirect_to_error(request, settings.IKARI_URL_ERROR_INACTIVE)
 
-            # if it's not published, then only allow site owner and members through
+            # if it's not published, then only allow site owner and members
+            # through
             if not site.is_public and not can_access:
                 return self.redirect_to_error(settings.IKARI_URL_ERROR_PRIVATE)
 
             # other wise, call the 'site_request' signal to allow project level integrated
-            # checks to be performed. requires a HttpResponse type to successfully continue.
+            # checks to be performed. requires a HttpResponse type to
+            # successfully continue.
             for receiver, return_value in signals.site_request.send(sender=DomainsMiddleware, request=request, site=site):
                 if isinstance(return_value, HttpResponse):
                     return return_value
