@@ -81,24 +81,24 @@ class LazyTestCase(TestCase):
         return
 
     def setUp(self):
-        if getattr(self, 'patch_templates', False):
+        if getattr(self, 'patch_templates', False) and hasattr(self, 'get_template'):
             self.get_template = django.template.loader.get_template
 
             def get_template(*args, **kwargs):
                 return Template("")
             django.template.loader.get_template = get_template
 
-        if "django.contrib.sessions" in settings.INSTALLED_APPS:
-            # Workaround for https://code.djangoproject.com/ticket/15740
-            engine = import_module(settings.SESSION_ENGINE)
-            store = engine.SessionStore()
-            store.save()
-            self.client.cookies[settings.SESSION_COOKIE_NAME] = store.session_key
+        # if "django.contrib.sessions" in settings.INSTALLED_APPS:
+        #     # Workaround for https://code.djangoproject.com/ticket/15740
+        #     engine = import_module(settings.SESSION_ENGINE)
+        #     store = engine.SessionStore()
+        #     store.save()
+        #     self.client.cookies[settings.SESSION_COOKIE_NAME] = store.session_key
 
         self.load_data()
 
     def tearDown(self):
-        if getattr(self, 'patch_templates', False):
+        if getattr(self, 'patch_templates', False) and hasattr(self, 'get_template'):
             django.template.loader.get_template = self.get_template
 
     def assertRedirectsTo(self, response, url):

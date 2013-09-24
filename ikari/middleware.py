@@ -12,6 +12,7 @@ from .loader import get_model
 from . import models
 from . import signals
 from . import cache
+from . import exceptions
 
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ class DomainsMiddleware:
 
     def process_request(self, request):
         host = request.get_host()
+        user = getattr(request, 'user', None)
 
         # strip port suffix if present
         if ":" in host:
@@ -43,24 +45,21 @@ class DomainsMiddleware:
         try:
             site = cache.get_thing(facet='item', query=host,
                                    update=lambda: IkariSiteModel.objects.get(fqdn=host))
+            site.user_can_access(user)
 
         except IkariSiteModel.DoesNotExist:
             return self.redirect_to_error(request, settings.IKARI_URL_ERROR_DOESNTEXIST)
 
-        else:
-            # set up request parameters
-            user = getattr(request, 'user', None)
-            can_access = site.user_can_access(user)
-
+        except exceptions.SiteErrorInactive:
             # if it's not active, then only allow staff through
-            if not site.is_active and not can_access:
-                return self.redirect_to_error(request, settings.IKARI_URL_ERROR_INACTIVE)
+            return self.redirect_to_error(request, settings.IKARI_URL_ERROR_INACTIVE)
 
+        except exceptions.SiteErrorIsPrivate:
             # if it's not published, then only allow site owner and members
             # through
-            if not site.is_public and not can_access:
-                return self.redirect_to_error(settings.IKARI_URL_ERROR_PRIVATE)
+            return self.redirect_to_error(request, settings.IKARI_URL_ERROR_PRIVATE)
 
+        else:
             # other wise, call the 'site_request' signal to allow project level integrated
             # checks to be performed. requires a HttpResponse type to
             # successfully continue.

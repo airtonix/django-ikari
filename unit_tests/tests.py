@@ -20,7 +20,7 @@ IkariSiteModel = get_model(*settings.IKARI_SITE_MODEL.split("."))
 User = get_model('auth', 'User')
 
 
-class IkariTestBase:
+class IkariTest(TestCase):
     urls = settings.ROOT_URLCONF
     base_url = "http://" + settings.IKARI_MASTER_DOMAIN
     doesntexist_url = base_url + reverse(settings.IKARI_URL_ERROR_DOESNTEXIST)
@@ -39,6 +39,14 @@ class IkariTestBase:
         return "{username}@{domain}".format(username=username,
                                             domain=settings.IKARI_MASTER_DOMAIN)
 
+    def assertRedirectsTo(self, response, url):
+        """
+        Assert that a response redirects to a specific url without trying to
+        load the other page.
+        """
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], url)
+
     def setUp(self):
         self.admin = mummy.make('auth.User', username="admin",
                                 email=self.make_email('admin'),
@@ -51,23 +59,16 @@ class IkariTestBase:
                                password='john')
         self.john.set_password('john')
         self.john.save()
-        self.master_meta = self.get_headers(settings.IKARI_MASTER_DOMAIN)
-
-    def tearDown(self):
-        self.admin.delete()
-        self.john.delete()
-
-
-class IkariSiteTest(IkariTestBase, TestCase):
 
     def test_master_site(self):
         # master site should be accesible.
-        response = self.client.get("/", **self.master_meta)
+        response = self.client.get(
+            "/", **self.get_headers(settings.IKARI_MASTER_DOMAIN))
         self.assertEqual(response.status_code, 200)
 
-    def test_site_is_inactive(self):
+    def test_inactive_site(self):
         site = mummy.make(settings.IKARI_SITE_MODEL,
-                          name='Johns New Inactive Site',
+                          name='The house that John built',
                           is_active=False,
                           is_public=False,
                           owner=self.john)
@@ -75,72 +76,31 @@ class IkariSiteTest(IkariTestBase, TestCase):
         # test guest can't access inactive site
         response = self.client.get('/', **self.get_headers(site.fqdn))
         # it should redirect
-        self.assertEquals(response.status_code, 302)
         # it should redirect to the inactive urlname
-        # self.assertRedirectsTo(response, self.inactive_url)
+        self.assertRedirectsTo(response, self.inactive_url)
+
+        # test owner cant access inactive site
+        with UserLogin(username=self.john.username, password='john'):
+            response = self.client.get('/', **self.get_headers(site.fqdn))
+            # it should redirect to the inactive urlname
+            self.assertRedirectsTo(response, self.inactive_url)
 
         # test admin can access inactive site
-        with UserLogin(self, self.admin.username, 'admin'):
+        with UserLogin(username=self.admin.username, password='admin'):
             response = self.client.get('/', **self.get_headers(site.fqdn))
             # it should allow access
             self.assertEquals(response.status_code, 200)
             # it should render the base usersite template
             self.assertEquals(response.template_name[0], 'ikari/site.html')
 
-        # test owner cant access inactive site
-        with UserLogin(self, self.john.username, 'john'):
-            response = self.client.get('/', **self.get_headers(site.fqdn))
-            # it should redirect
-            self.assertEquals(response.status_code, 302)
-            # it should redirect to the inactive urlname
-            # self.assertRedirectsTo(response, self.inactive_url)
-
-    def test_site_is_active(self):
+    def test_active_site(self):
         site = mummy.make(settings.IKARI_SITE_MODEL,
-                          name='Johns New Inactive Site',
-                          is_active=True,
+                          name='The house that John built',
+                          is_active=False,
                           is_public=False,
                           owner=self.john)
 
         # test guest can't access inactive site
         response = self.client.get('/', **self.get_headers(site.fqdn))
-        # it should redirect
-        # self.assertEquals(response.status_code, 302)
         # it should redirect to the inactive urlname
-        # self.assertRedirectsTo(response, self.inactive_url)
-
-    # test admin can access inactive site
-    #         with self.login(self.admin.username, 'admin'):
-    #             response = self.client.get(
-    #                 '/', **self.get_headers(site=site))
-    # it should allow access
-    #             self.assertEquals(response.status_code, 200)
-    # it should render the base usersite template
-    #             self.assertEquals(response.template_name[0], 'ikari/site.html')
-
-    # test owner cant access inactive site
-    #         with self.login(self.john.username, 'john'):
-    #             response = self.client.get(
-    #                 '/', **self.get_headers(site=site))
-    # it should redirect
-    #             self.assertEquals(response.status_code, 200)
-    # it should redirect to the inactive urlname
-    #             self.assertEquals(response.template_name[0], 'ikari/site.html')
-
-
-# class IkariWhoisMiddlewareTest(TestCase):
-
-#     def setUp(self):
-#         self.admin = mummy.make(
-#             'auth.User', username="admin", is_superuser=True, is_active=True)
-#         self.john = mummy.make(
-#             'auth.User', username="john", is_superuser=False, is_active=True)
-#         self.johns_site = mummy.make(settings.IKARI_SITE_MODEL,
-#                                      name='Johns New Site')
-#         self.johns_site.set_owner(self.john)
-
-#     def test_whois_middleware(self):
-#         """
-#         Here we
-#         """
-
+        self.assertRedirectsTo(response, self.private_url)

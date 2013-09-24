@@ -12,6 +12,7 @@ from django.template.defaultfilters import slugify
 from .conf import settings, null_handler
 from .loader import load_class
 from . import cache
+from . import exceptions
 
 
 logger = logging.getLogger(__name__)
@@ -96,25 +97,27 @@ class BaseSite(models.Model):
 
     def user_can_access(self, user):
         is_valid_user = user and user.is_authenticated and user.is_active
-        # staff and superuser can always access the site
-        if is_valid_user and (user.is_superuser or user.is_staff):
+        is_admin = user and is_valid_user and (user.is_superuser or user.is_staff)
+        is_manager = is_valid_user and user in (self.get_owner(), self.get_moderators())
+
+        if is_admin:
             return True
 
         # if the site is disabled (only site staff can toggle this)
-        if not self.is_active:
-            return False
+        elif not self.is_active:
+            raise exceptions.SiteErrorInactive()
+            # otherwise the site is active, and we don't know what the user is yet
+            # or the site isn't active and the user is admin
 
         # if the site isn't in a public state yet
-        if not self.is_public and is_valid_user:
-            # if the user is allowed to manage the site
-            if user in (self.get_owner(), self.get_moderators()):
-                return True
+        # and the user is not admin
+        # or the user is not site manager
+        elif not self.is_public and not is_manager:
+            raise exceptions.SiteErrorIsPrivate()
+            # otherwise the site is public and the user is we don't care
+            # or the site is private and the user is a manager
 
-            # only site owners and moderators can access active yet unpublished
-            # sites.
-            return False
-
-        # site is active and published
+        # otherwise show the site
         return True
 
     def get_owner(self):
@@ -125,8 +128,7 @@ class BaseSite(models.Model):
         self.save()
 
     def get_moderators(self):
-        raise NotImplementedError(
-            "You need to implemenet this in your own subclass")
+        return self.members.all()
 
 
 class Site(BaseSite):
