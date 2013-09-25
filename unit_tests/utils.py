@@ -34,7 +34,7 @@ By default also patches the template loader and initiates the client session.
 """
 
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse_lazy
 from django.template import Template
 from django.test import TestCase
 from django.utils.importlib import import_module
@@ -64,15 +64,6 @@ class LazyTestCase(TestCase):
     def login(self, user, password):
         return UserLogin(self, user, password)
 
-    def get(self, url_name, data=None, *args, **kwargs):
-        data = data or {}
-        return self.client.get(
-            reverse(url_name, args=args, kwargs=kwargs), data, *args, **kwargs)
-
-    def post(self, url_name, data=None, *args, **kwargs):
-        return self.client.post(
-            reverse(url_name, args=args, kwargs=kwargs), data, *args, **kwargs)
-
     @property
     def session(self):
         return self.client.session
@@ -88,12 +79,12 @@ class LazyTestCase(TestCase):
                 return Template("")
             django.template.loader.get_template = get_template
 
-        # if "django.contrib.sessions" in settings.INSTALLED_APPS:
-        #     # Workaround for https://code.djangoproject.com/ticket/15740
-        #     engine = import_module(settings.SESSION_ENGINE)
-        #     store = engine.SessionStore()
-        #     store.save()
-        #     self.client.cookies[settings.SESSION_COOKIE_NAME] = store.session_key
+        if "django.contrib.sessions" in settings.INSTALLED_APPS:
+            # Workaround for https://code.djangoproject.com/ticket/15740
+            engine = import_module(settings.SESSION_ENGINE)
+            store = engine.SessionStore()
+            store.save()
+            self.client.cookies[settings.SESSION_COOKIE_NAME] = store.session_key
 
         self.load_data()
 
@@ -108,3 +99,10 @@ class LazyTestCase(TestCase):
         """
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], url)
+
+    def assertLocationEquals(self, response, url):
+        """
+        Assert that a response redirects to a specific url without trying to
+        load the other page.
+        """
+        self.assertEqual(response._headers.get("location")[1], url)

@@ -20,7 +20,7 @@ IkariSiteModel = get_model(*settings.IKARI_SITE_MODEL.split("."))
 User = get_model('auth', 'User')
 
 
-class IkariTest(TestCase):
+class IkariTestBase(object):
     urls = settings.ROOT_URLCONF
     base_url = "http://" + settings.IKARI_MASTER_DOMAIN
     doesntexist_url = base_url + reverse(settings.IKARI_URL_ERROR_DOESNTEXIST)
@@ -35,9 +35,28 @@ class IkariTest(TestCase):
             "SERVER_PORT": "80"
         }
 
-    def make_email(self, username):
-        return "{username}@{domain}".format(username=username,
-                                            domain=settings.IKARI_MASTER_DOMAIN)
+    def tearDown(self):
+        IkariSiteModel = get_model(*settings.IKARI_SITE_MODEL.split("."))
+        IkariSiteModel.objects.all().delete()
+
+    def setUp(self):
+        self.user_owner = self.make_user(
+            'owner', 'owner', is_superuser=False, is_active=True, is_staff=False)
+
+        self.user_admin = self.make_user(
+            'admin', 'admin', is_superuser=True, is_active=True, is_staff=True)
+        self.site_name = "Something something something, darkside"
+        self.site_fqdn = "darksi.de"
+
+    def make_user(self, username, password, **kwargs):
+        email = "{username}@{domain}".format(username=username,
+                                             domain=settings.IKARI_MASTER_DOMAIN)
+        user = mummy.make(
+            'auth.User', username=username, email=email, **kwargs)
+        user._unecrypted_password = password
+        user.set_password(password)
+        user.save()
+        return user
 
     def assertRedirectsTo(self, response, url):
         """
@@ -47,18 +66,8 @@ class IkariTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], url)
 
-    def setUp(self):
-        self.admin = mummy.make('auth.User', username="admin",
-                                email=self.make_email('admin'),
-                                is_superuser=True, is_active=True, is_staff=True)
-        self.admin.set_password('admin')
-        self.admin.save()
-        self.john = mummy.make('auth.User', username="john",
-                               email=self.make_email('john'),
-                               is_superuser=False, is_active=True, is_staff=False,
-                               password='john')
-        self.john.set_password('john')
-        self.john.save()
+
+class IkariSiteTest(IkariTestBase, LazyTestCase):
 
     def test_master_site(self):
         # master site should be accesible.
@@ -66,41 +75,198 @@ class IkariTest(TestCase):
             "/", **self.get_headers(settings.IKARI_MASTER_DOMAIN))
         self.assertEqual(response.status_code, 200)
 
-    def test_inactive_site(self):
+    def test_site_with_port(self):
         site = mummy.make(settings.IKARI_SITE_MODEL,
-                          name='The house that John built',
+                          name=self.site_name,
+                          is_active=True,
+                          is_public=True,
+                          owner=self.user_owner)
+        response = self.client.get(
+            "/", **self.get_headers(settings.IKARI_MASTER_DOMAIN+":80"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context.get("request").META.get("HTTP_HOST"), settings.IKARI_MASTER_DOMAIN+":80")
+
+        response = self.client.get(
+            "/", **self.get_headers(site.fqdn+":8000"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context.get('Site').name, site.name)
+        self.assertEqual(response.context.get("request").META.get("HTTP_HOST"), site.fqdn+":8000")
+
+    def test_threading_conflicts(self):
+        # master site should be accesible.
+        site = mummy.make(settings.IKARI_SITE_MODEL,
+                          name=self.site_name,
+                          is_active=True,
+                          is_public=True,
+                          owner=self.user_owner)
+        response = self.client.get(
+            "/", **self.get_headers(settings.IKARI_MASTER_DOMAIN))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context.get("request").META.get("HTTP_HOST"), settings.IKARI_MASTER_DOMAIN)
+
+        response = self.client.get(
+            "/", **self.get_headers(site.fqdn))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context.get('Site').name, site.name)
+
+        response = self.client.get(
+            "/", **self.get_headers(settings.IKARI_MASTER_DOMAIN))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context.get("request").META.get("HTTP_HOST"), settings.IKARI_MASTER_DOMAIN)
+
+    def test_site_inactive(self):
+        site = mummy.make(settings.IKARI_SITE_MODEL,
+                          name=self.site_name,
                           is_active=False,
                           is_public=False,
-                          owner=self.john)
+                          owner=self.user_owner)
+        self.assertEquals(site.is_active, False)
+        self.assertEquals(site.is_public, False)
+
+    def test_site_private(self):
+        site = mummy.make(settings.IKARI_SITE_MODEL,
+                          name=self.site_name,
+                          is_active=True,
+                          is_public=False,
+                          owner=self.user_owner)
+        self.assertEquals(site.is_active, True)
+        self.assertEquals(site.is_public, False)
+
+    def test_site_public(self):
+        site = mummy.make(settings.IKARI_SITE_MODEL,
+                          name=self.site_name,
+                          is_active=True,
+                          is_public=True,
+                          owner=self.user_owner)
+        self.assertEquals(site.is_active, True)
+        self.assertEquals(site.is_public, True)
+
+    def test_inactive_site_guest(self):
+        site = mummy.make(settings.IKARI_SITE_MODEL,
+                          name=self.site_name,
+                          is_active=False,
+                          is_public=False,
+                          owner=self.user_owner)
 
         # test guest can't access inactive site
-        response = self.client.get('/', **self.get_headers(site.fqdn))
-        # it should redirect
+        response = self.client.get(
+            '/', **self.get_headers(site.fqdn))
         # it should redirect to the inactive urlname
-        self.assertRedirectsTo(response, self.inactive_url)
+        self.assertLocationEquals(response, self.inactive_url)
 
-        # test owner cant access inactive site
-        with UserLogin(username=self.john.username, password='john'):
-            response = self.client.get('/', **self.get_headers(site.fqdn))
-            # it should redirect to the inactive urlname
-            self.assertRedirectsTo(response, self.inactive_url)
+    def test_inactive_site_admin(self):
+        site = mummy.make(settings.IKARI_SITE_MODEL,
+                          name=self.site_name,
+                          is_active=False,
+                          is_public=False,
+                          owner=self.user_owner)
 
         # test admin can access inactive site
-        with UserLogin(username=self.admin.username, password='admin'):
-            response = self.client.get('/', **self.get_headers(site.fqdn))
+        with self.login(self.user_admin.username, self.user_admin._unecrypted_password):
+            response = self.client.get(
+                '/', **self.get_headers(site.fqdn))
             # it should allow access
             self.assertEquals(response.status_code, 200)
             # it should render the base usersite template
             self.assertEquals(response.template_name[0], 'ikari/site.html')
 
-    def test_active_site(self):
+    def test_inactive_site_owner(self):
         site = mummy.make(settings.IKARI_SITE_MODEL,
-                          name='The house that John built',
+                          name=self.site_name,
                           is_active=False,
                           is_public=False,
-                          owner=self.john)
+                          owner=self.user_owner)
 
-        # test guest can't access inactive site
-        response = self.client.get('/', **self.get_headers(site.fqdn))
-        # it should redirect to the inactive urlname
-        self.assertRedirectsTo(response, self.private_url)
+        # test owner cant access inactive site
+        with self.login(self.user_owner.username, self.user_owner._unecrypted_password):
+            response = self.client.get(
+                '/', **self.get_headers(site.fqdn))
+            # it should redirect to the inactive urlname
+            self.assertLocationEquals(response, self.inactive_url)
+
+    def test_private_site_guest(self):
+        site = mummy.make(settings.IKARI_SITE_MODEL,
+                          name=self.site_name,
+                          is_active=True,
+                          is_public=False,
+                          owner=self.user_owner)
+
+        # test guest can't access private site
+        response = self.client.get(
+            '/', **self.get_headers(site.fqdn))
+        # it should redirect to the private urlname
+        self.assertLocationEquals(response, self.private_url)
+
+    def test_private_site_admin(self):
+        site = mummy.make(settings.IKARI_SITE_MODEL,
+                          name=self.site_name,
+                          is_active=True,
+                          is_public=False,
+                          owner=self.user_owner)
+
+        # test owner can access private site
+        with self.login(self.user_admin.username, self.user_admin._unecrypted_password):
+            response = self.client.get(
+                '/', **self.get_headers(site.fqdn))
+            self.assertEquals(response.status_code, 200)
+            self.assertEquals(response.template_name[0], 'ikari/site.html')
+
+    def test_private_site_owner(self):
+        site = mummy.make(settings.IKARI_SITE_MODEL,
+                          name=self.site_name,
+                          is_active=True,
+                          is_public=False,
+                          owner=self.user_owner)
+
+        # test owner can access private site
+        with self.login(self.user_owner.username, self.user_owner._unecrypted_password):
+            response = self.client.get(
+                '/', **self.get_headers(site.fqdn))
+            # it should allow access
+            self.assertEquals(response.status_code, 200)
+            # it should render the base usersite template
+            self.assertEquals(response.template_name[0], 'ikari/site.html')
+
+    def test_public_site_guest(self):
+        site = mummy.make(settings.IKARI_SITE_MODEL,
+                          name=self.site_name,
+                          is_active=True,
+                          is_public=True,
+                          owner=self.user_owner)
+
+        response = self.client.get(
+            '/', **self.get_headers(site.fqdn))
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.template_name[0], 'ikari/site.html')
+
+    def test_public_site_admin(self):
+        site = mummy.make(settings.IKARI_SITE_MODEL,
+                          name=self.site_name,
+                          is_active=True,
+                          is_public=True,
+                          owner=self.user_owner)
+
+        # test admin can access inactive site
+        with self.login(self.user_owner.username, self.user_owner._unecrypted_password):
+            response = self.client.get(
+                '/', **self.get_headers(site.fqdn))
+            # it should allow access
+            self.assertEquals(response.status_code, 200)
+            # it should render the base usersite template
+            self.assertEquals(response.template_name[0], 'ikari/site.html')
+
+    def test_public_site_owner(self):
+        site = mummy.make(settings.IKARI_SITE_MODEL,
+                          name=self.site_name,
+                          is_active=True,
+                          is_public=True,
+                          owner=self.user_owner)
+
+        # test admin can access inactive site
+        with self.login(self.user_admin.username, self.user_admin._unecrypted_password):
+            response = self.client.get(
+                '/', **self.get_headers(site.fqdn))
+            # it should allow access
+            self.assertEquals(response.status_code, 200)
+            # it should render the base usersite template
+            self.assertEquals(response.template_name[0], 'ikari/site.html')

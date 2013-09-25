@@ -27,11 +27,21 @@ default_settings.update(dict(
         'django.contrib.auth.middleware.AuthenticationMiddleware',
         'django.contrib.messages.middleware.MessageMiddleware',
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
+        'johnny.middleware.LocalStoreClearMiddleware',
+        'johnny.middleware.QueryCacheMiddleware',
         'ikari.middleware.DomainsMiddleware',
     ],
+    CACHES={
+        'default': dict(
+            BACKEND='johnny.backends.redis.RedisCache',
+            LOCATION='127.0.0.1:6379',
+            JOHNNY_CACHE=True,
+        )
+    },
     PASSWORD_HASHERS=(
         'django.contrib.auth.hashers.MD5PasswordHasher',
     ),
+    JOHNNY_MIDDLEWARE_KEY_PREFIX='ikari',
     IKARI_MASTER_DOMAIN='ikari.local',
     IKARI_ACCOUNT_URL='ikari.urls.private',
     IKARI_USERSITE_URLCONF='ikari.urls.sites',

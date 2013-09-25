@@ -39,7 +39,7 @@ class IkariAppConf(AppConf):
 
     # See ikari.backends.domain_verification for a list of
     # existing backends
-    DOMAIN_VERIFICATION_BACKEND='ikari.backends.domain_verification.FQDNVerificationBackend'
+    DOMAIN_VERIFICATION_BACKEND = 'ikari.backends.domain_verification.FQDNVerificationBackend'
     USE_SSO = False
 
     CACHE_KEY_PREFIX = u'ikari:'
@@ -53,20 +53,26 @@ class IkariAppConf(AppConf):
 
     #
     ERRORMSG_UNAVAILABLE = _('This hostname is unavailable.')
-    ERRORMSG_INVALIDCHARS = _('Invalid characters in hostname.  You may only use a-z, 0-9, and "-".')
+    ERRORMSG_INVALIDCHARS = _(
+        'Invalid characters in hostname.  You may only use a-z, 0-9, and "-".')
     ERRORMSG_NOPERMISSION = _('Insufficient permissions.')
 
     # Context used for error templates
     # not used if you're redirecting users to the
     # DEFAULT_URL
-    ERRORCONTEXT_INACTIVE = {'title': _("Domain Inactive"), 'message': _("Looks like you're trying to access a domain that's inactive")}
-    ERRORCONTEXT_INVALID = {'title': _("Domain Invalid"), 'message': _("No such domain registered here")}
-    ERRORCONTEXT_PRIVATE = {'title': _("Domain Private"), 'message': _("This domain is private. The owner hasn't made it public yet.")}
-    ERRORCONTEXT_UNKNOWN = {'title': _("Oops"), 'message': _("Something weird happened.")}
+    ERRORCONTEXT_INACTIVE = {'title': _("Domain Inactive"), 'message': _(
+        "Looks like you're trying to access a domain that's inactive")}
+    ERRORCONTEXT_INVALID = {
+        'title': _("Domain Invalid"), 'message': _("No such domain registered here")}
+    ERRORCONTEXT_PRIVATE = {'title': _("Domain Private"), 'message': _(
+        "This domain is private. The owner hasn't made it public yet.")}
+    ERRORCONTEXT_UNKNOWN = {
+        'title': _("Oops"), 'message': _("Something weird happened.")}
 
     def configure_site_urlconf(self, value):
         if not value:
-            raise exceptions.ImproperlyConfigured(MESSAGES.get('MissingSettings').format("SITE_URLCONF"))
+            raise exceptions.ImproperlyConfigured(
+                MESSAGES.get('MissingSettings').format("SITE_URLCONF"))
         return value
 
     def configure_use_sso(self, value):
@@ -79,12 +85,14 @@ class IkariAppConf(AppConf):
 
     def configure_site_model(self, value):
         if not value:
-            raise exceptions.ImproperlyConfigured(MESSAGES.get('MissingSettings').format("SITE_MODEL"))
+            raise exceptions.ImproperlyConfigured(
+                MESSAGES.get('MissingSettings').format("SITE_MODEL"))
         try:
             app_name, model_name = value.split(".")
             klass = get_model(app_name, model_name)
         except Exception as error:
-            raise exceptions.ImproperlyConfigured(MESSAGES.get("FailedImportTest").format(value))
+            raise exceptions.ImproperlyConfigured(
+                MESSAGES.get("FailedImportTest").format(value))
         return value
 
     def configure_port_suffix(self, value):
@@ -94,7 +102,8 @@ class IkariAppConf(AppConf):
 
     def configure_master_domain(self, value):
         if not hasattr(settings, 'IKARI_MASTER_DOMAIN'):
-            raise exceptions.ImproperlyConfigured(MESSAGES.get('MissingSettings').format("MASTER_DOMAIN"))
+            raise exceptions.ImproperlyConfigured(
+                MESSAGES.get('MissingSettings').format("MASTER_DOMAIN"))
         return value
 
     def configure_subdomain_root(self, value):
@@ -102,14 +111,14 @@ class IkariAppConf(AppConf):
             value = settings.IKARI_MASTER_DOMAIN
 
         if value and not value.startswith("."):
-            value = "."+value
+            value = "." + value
 
         return value
 
 
-# #
-# # Old Configuration
-# #
+#
+# Old Configuration
+#
 # PORT_SUFFIX = ''
 # PORT = getattr(settings, 'IKARI_PORT', None)
 # if PORT:
@@ -129,7 +138,8 @@ class IkariAppConf(AppConf):
 # assert SUBDOMAIN_ROOT is not None, _("You must create IKARI_ROOT_DOMAIN in your settings")
 # if not SUBDOMAIN_ROOT.startswith('.'):
 #     SUBDOMAIN_ROOT = '.' + SUBDOMAIN_ROOT
-# SUBDOMAIN_STOPWORDS = getattr(settings, 'IKARI_SUBDOMAIN_STOPWORDS', ('www',))
+# SUBDOMAIN_STOPWORDS = getattr(settings, 'IKARI_SUBDOMAIN_STOPWORDS',
+# ('www',))
 
 # try:
 #     import sso
@@ -139,10 +149,11 @@ class IkariAppConf(AppConf):
 #     USE_SSO = getattr(settings, 'IKARI_USE_SSO', True)
 
 # ANCHORED_MODEL = getattr(settings, 'IKARI_ANCHORED_OBJECT', u'auth.User')
-# #if ANCHORED_MODEL is not an instance of "auth.User" then you need to supply the attr of
-# # ANCHORED_MODEL that points us to an instance of 'auth.User'. it can be a callable.
+# if ANCHORED_MODEL is not an instance of "auth.User" then you need to supply the attr of
+# ANCHORED_MODEL that points us to an instance of 'auth.User'. it can be a callable.
 # ANCHORED_MODEL_OWNER_ATTR = getattr(settings, 'IKARI_ANCHORED_OBJECT_OWNER_ATTR', u'owner')
-# ANCHORED_MODEL_MEMBER_ATTR = getattr(settings, 'IKARI_ANCHORED_OBJECT_MEMBER_ATTR', u'members')
+# ANCHORED_MODEL_MEMBER_ATTR = getattr(settings,
+# 'IKARI_ANCHORED_OBJECT_MEMBER_ATTR', u'members')
 
 # CACHE_KEY_PREFIX = getattr(settings, 'IKARI_CACHE_PREFIX', u'ikari:')
 # CACHE_KEY_ALL = getattr(settings, 'IKARI_CACHE_KEY_ALL', u'domain:all')
@@ -151,14 +162,17 @@ class IkariAppConf(AppConf):
 # ERRORMSG_UNAVAILABLE = getattr(settings,  "IKARI_ERRORMSG_UNAVAILABLE",   _('This hostname is unavailable.'))
 # ERRORMSG_INVALIDCHARS = getattr(settings, "IKARI_ERRORMSG_INVALIDCHARS",  _('Invalid characters in hostname.  You may only use a-z, 0-9, and "-".'))
 # ERRORMSG_PROTECTEDTLD = getattr(settings, "IKARI_ERRORMSG_PROTECTEDTLD",  _('Hostnames cannot be a subdomain of {}.'.format(SUBDOMAIN_ROOT)))
-# ERRORMSG_NOPERMISSION = getattr(settings, "IKARI_ERRORMSG_NOPERMISSION",  _('Insufficient permissions.'))
+# ERRORMSG_NOPERMISSION = getattr(settings, "IKARI_ERRORMSG_NOPERMISSION",
+# _('Insufficient permissions.'))
 
 # ERRORCONTEXT_INACTIVE = {'title': _("Domain Inactive"), 'message': _("Looks like you're trying to access a domain that's inactive")}
 # ERRORCONTEXT_INVALID = {'title': _("Domain Invalid"), 'message': _("No such domain registered here")}
-# ERRORCONTEXT_PRIVATE = {'title': _("Domain Private"), 'message': _("This domain is private. The owner hasn't made it public yet.")}
+# ERRORCONTEXT_PRIVATE = {'title': _("Domain Private"), 'message': _("This
+# domain is private. The owner hasn't made it public yet.")}
 
 
 class NullHandler(logging.Handler):
+
     def emit(self, record):
         pass
 
