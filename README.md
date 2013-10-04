@@ -15,9 +15,11 @@ in software-as-a-service projects.
   * Permissions
 4. Middleware
 5. Views
-6. URLs
-7. Templates
-8. License
+6. Caching
+7. Signals
+8. URLs
+9. Templates
+10. License
 
 
 ### 1 Installation
@@ -165,7 +167,12 @@ and is not `IKARI_MASTER_DOMAIN', middleware redirects user to
 * `ikari.views.SiteCreateView` : Allows authorised users to create their site.
 
 
-### 6 Signals
+### 6 Caching
+
+I susgest you install and use `django-johnny-cache` with `django-redis-cache`
+
+
+### 7 Signals
 
 * `ikari.signals.site_request`: fired after default access rules satisfied but before delivery
 of site homepage
@@ -173,7 +180,8 @@ of site homepage
 * `ikari.signals.site_updated`: fired after an `ikari.Site` is updated.
 * `ikari.signals.site_deleted`: fired after an `ikari.Site` is deleted.
 
-### 7 URLs
+
+### 8 URLs
 
 ##### `ikari.urls.errors`
 
@@ -198,7 +206,7 @@ url(r'^users/sites/', include('ikari.urls.private')),
 The default urlconf which provides the `ikari.views.SiteHomeView`.
 
 
-### 8 Templates
+### 9 Templates
 Ikari:
 - `ikari/site-update.html` called by `ikari.views.SiteUpdateView` view.
   Receives two arguments:
@@ -209,5 +217,5 @@ Ikari:
   `ikari.forms.IkariSiteForm`.
 
 
-### 9 License
+### 10 License
   This project is licensed on terms of GPL (GPL-LICENSE.txt) licenses.

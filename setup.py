@@ -14,7 +14,6 @@ setup(name="django-ikari",
       install_requires=[
           'django>=1.4',
           'django-appconf==0.4.1',
-          'johnny-cache',
           'whois',
       ],
       )

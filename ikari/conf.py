@@ -54,10 +54,6 @@ class IkariAppConf(AppConf):
     # existing backends
     DOMAIN_VERIFICATION_BACKEND = 'ikari.backends.domain_verification.FQDNVerificationBackend'
 
-    CACHE_KEY_PREFIX = u'ikari:'
-    CACHE_KEY_ALL = u'domain:all'
-    CACHE_KEY_ITEM = u'domain:{}'
-
     # you can customise how this relates to your
     # project by subclassing from ikari.models.BaseSite
     # and pointing this at your new Site model.
