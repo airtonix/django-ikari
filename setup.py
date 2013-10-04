@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from setuptools import setup, find_packages
 
 import ikari as app
@@ -15,7 +17,4 @@ setup(name="django-ikari",
           'johnny-cache',
           'whois',
       ],
-      tests_require=[
-          'django-easytests',
-      ]
       )
