@@ -4,4 +4,4 @@ python:
   - "2.7"
 # command to install dependencies
 install: "pip install . --use-mirrors"
-script: ./runtests.py
+script: python ./runtests.py
