@@ -8,10 +8,10 @@ from django.db import connection
 
 from model_mommy import mommy as mummy
 
+from ikari import models
 from ikari.conf import settings
 from ikari.utils import null_handler
 from ikari.views import SiteHomeView, SiteUpdateView
-from ikari.loader import load_class
 
 from .utils import LazyTestCase, UserLogin, TestCase, override_settings
 
@@ -54,7 +54,7 @@ class IkariTestBase(object):
         self.site_model.objects.all().delete()
 
     def setUp(self):
-        self.site_model = load_class(settings.IKARI_SITE_MODEL)
+        self.site_model = models.Site
 
         self.user_owner = self.make_user(
             'owner', 'owner', is_superuser=False, is_active=True, is_staff=False)
@@ -85,10 +85,6 @@ class IkariTestBase(object):
 
 class IkariSiteTestBase(object):
 
-    def __init__(self, *args, **kwargs):
-        connection.creation.create_test_db(autoclobber=True)
-        super(IkariSiteTestBase, self).__init__(*args, **kwargs)
-
     def test_master_site(self):
         # master site should be accesible.
         response = self.client.get(
@@ -116,7 +112,7 @@ class IkariSiteTestBase(object):
 
     def test_threading_conflicts(self):
         # master site should be accesible.
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=True,
                           is_public=True,
@@ -296,26 +292,26 @@ class IkariSiteTestBase(object):
             self.assertEquals(response.template_name[0], 'ikari/site.html')
 
 
-# class BasicIkariTest(IkariTestBase, IkariSiteTestBase, LazyTestCase):
-#     """
-#       Normal tests
-#     """
-
-CustomSiteSettings = {
-    "IKARI_SITE_MODEL": 'tests.site.SomeCustomisedSite',
-    "DATABASES": {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': 'customised_sitet',
-        }
-    }
-}
-
-
-@override_settings(**CustomSiteSettings)
-class IkariCustomSiteTest(IkariSiteTestBase, IkariTestBase, LazyTestCase):
-
+class BasicIkariTest(IkariTestBase, IkariSiteTestBase, LazyTestCase):
     """
-        This test case covers the scenario where a project integrator
-        will specify their own IKARI_SITE_MODEL.
+      Normal tests
     """
+
+# CustomSiteSettings = {
+#     "IKARI_SITE_MODEL": 'tests.site.SomeCustomisedSite',
+#     "DATABASES": {
+#         'default': {
+#             'ENGINE': 'django.db.backends.sqlite3',
+#             'NAME': 'customised_sitet',
+#         }
+#     }
+# }
+
+
+# @override_settings(**CustomSiteSettings)
+# class IkariCustomSiteTest(IkariSiteTestBase, IkariTestBase, LazyTestCase):
+
+#     """
+#         This test case covers the scenario where a project integrator
+#         will specify their own IKARI_SITE_MODEL.
+#     """

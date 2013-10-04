@@ -7,13 +7,12 @@ from django.utils.encoding import iri_to_uri
 
 from .conf import settings
 from .utils import null_handler
-from .loader import get_model, load_class
 from . import signals
+from . import models
 
 
 logger = logging.getLogger(__name__)
 logger.addHandler(null_handler)
-IkariSiteModel = load_class(settings.IKARI_SITE_MODEL)
 
 
 class DomainsMiddleware:
@@ -40,10 +39,10 @@ class DomainsMiddleware:
             request.urlconf = settings.IKARI_SITE_URLCONF
 
             try:
-                site = IkariSiteModel.objects.get(fqdn__iexact=host)
+                site = models.Site.objects.get(fqdn__iexact=host)
                 request.ikari_site = site
 
-            except IkariSiteModel.DoesNotExist:
+            except models.Site.DoesNotExist:
                 return self.redirect_to_error(request, settings.IKARI_URL_ERROR_DOESNTEXIST)
 
             is_valid_user = user and user.is_authenticated and user.is_active

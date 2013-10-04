@@ -17,7 +17,6 @@ from .forms import IkariSiteAdminForm
 site_model_string = settings.IKARI_SITE_MODEL
 logger = logging.getLogger(__name__)
 logger.addHandler(null_handler)
-IkariSiteModel = load_class(settings.IKARI_SITE_MODEL)
 
 
 class IkariSiteAdmin(admin.ModelAdmin):
@@ -29,24 +28,24 @@ class IkariSiteAdmin(admin.ModelAdmin):
         for site in queryset:
             logger.debug("attempting to verify site:", site)
             results.append(whois.query(site.fqdn))
-        #TODO: redirect to report page, print whois results.
+        # TODO: redirect to report page, print whois results.
 
     verify_site.short_description = 'Query the site txt record for the uuid.'
 
     def enable_site(instance, request, queryset):
-        queryset.update(is_active = True)
+        queryset.update(is_active=True)
     enable_site.short_description = _('Enable the selected sites.')
 
     def disable_site(instance, request, queryset):
-        queryset.update(is_active = False)
+        queryset.update(is_active=False)
     disable_site.short_description = _('Enable the selected sites.')
 
     def publish_site(instance, request, queryset):
-        queryset.update(is_public = True)
+        queryset.update(is_public=True)
     publish_site.short_description = _('Make selected sites public.')
 
     def unpublish_site(instance, request, queryset):
-        queryset.update(is_public = False)
+        queryset.update(is_public=False)
     unpublish_site.short_description = _('Make selected sites private.')
 
     def set_site_as_primary(instance, request, queryset):
@@ -60,4 +59,4 @@ class IkariSiteAdmin(admin.ModelAdmin):
                set_site_as_primary]
 
 
-admin.site.register(IkariSiteModel, IkariSiteAdmin)
+admin.site.register(models.Site, IkariSiteAdmin)

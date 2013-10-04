@@ -19,6 +19,7 @@ class SiteMembership(models.Model):
                                     choices=settings.IKARI_SITE_PERMISSION_GROUPS)
 
     class Meta:
+        app_label = 'ikari'
         abstract = False
 
 
@@ -29,6 +30,7 @@ class Site(BaseSite):
         USER_MODEL_STRING, through=SiteMembership, blank=True, null=True)
 
     class Meta:
+        app_label = 'ikari'
         abstract = False
 
     def get_owner(self):

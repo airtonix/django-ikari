@@ -21,7 +21,7 @@ class SiteHomeView(TemplateView):
 
     def get_context_data(self, **kwargs):
         return {
-            "Site": self.request.site
+            "Site": self.request.ikari_site
         }
 
 
