@@ -37,6 +37,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse_lazy
 from django.template import Template
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.utils.importlib import import_module
 import django.template.loader
 

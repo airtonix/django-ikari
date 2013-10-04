@@ -8,7 +8,8 @@ from django.utils.safestring import SafeUnicode
 from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse, reverse_lazy
 
-from .conf import settings, null_handler
+from .conf import settings
+from .utils import null_handler
 from .loader import get_model, load_class
 from . import models
 from . import fields
@@ -18,7 +19,7 @@ from . import utils
 
 logger = logging.getLogger(__name__)
 logger.addHandler(null_handler)
-IkariSiteModel = get_model(*settings.IKARI_SITE_MODEL.split("."))
+IkariSiteModel = load_class(settings.IKARI_SITE_MODEL)
 
 
 class IkariSiteAdminForm(forms.ModelForm):

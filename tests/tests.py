@@ -4,29 +4,44 @@ from django.db.models import get_model
 from django.utils.encoding import iri_to_uri
 from django.core.urlresolvers import reverse
 from django.core.handlers.base import BaseHandler
+from django.db import connection
 
 from model_mommy import mommy as mummy
 
-from ikari.conf import settings, null_handler
+from ikari.conf import settings
+from ikari.utils import null_handler
 from ikari.views import SiteHomeView, SiteUpdateView
-from .utils import LazyTestCase, UserLogin, TestCase
+from ikari.loader import load_class
+
+from .utils import LazyTestCase, UserLogin, TestCase, override_settings
 
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.DEBUG)
 
-IkariSiteModel = get_model(*settings.IKARI_SITE_MODEL.split("."))
 User = get_model('auth', 'User')
 
 
 class IkariTestBase(object):
     urls = settings.ROOT_URLCONF
     base_url = "http://" + settings.IKARI_MASTER_DOMAIN
-    doesntexist_url = base_url + reverse(settings.IKARI_URL_ERROR_DOESNTEXIST)
-    private_url = base_url + reverse(settings.IKARI_URL_ERROR_PRIVATE)
-    inactive_url = base_url + reverse(settings.IKARI_URL_ERROR_INACTIVE)
-    unknown_url = base_url + reverse(settings.IKARI_URL_ERROR_UNKNOWN)
+
+    @property
+    def doesntexist_url(self):
+        return "".join([self.base_url, reverse(settings.IKARI_URL_ERROR_DOESNTEXIST)])
+
+    @property
+    def private_url(self):
+        return "".join([self.base_url, reverse(settings.IKARI_URL_ERROR_PRIVATE)])
+
+    @property
+    def inactive_url(self):
+        return "".join([self.base_url, reverse(settings.IKARI_URL_ERROR_INACTIVE)])
+
+    @property
+    def unknown_url(self):
+        return "".join([self.base_url, reverse(settings.IKARI_URL_ERROR_UNKNOWN)])
 
     def get_headers(self, fqdn):
         return {
@@ -36,10 +51,11 @@ class IkariTestBase(object):
         }
 
     def tearDown(self):
-        IkariSiteModel = get_model(*settings.IKARI_SITE_MODEL.split("."))
-        IkariSiteModel.objects.all().delete()
+        self.site_model.objects.all().delete()
 
     def setUp(self):
+        self.site_model = load_class(settings.IKARI_SITE_MODEL)
+
         self.user_owner = self.make_user(
             'owner', 'owner', is_superuser=False, is_active=True, is_staff=False)
 
@@ -67,7 +83,11 @@ class IkariTestBase(object):
         self.assertEqual(response["Location"], url)
 
 
-class IkariSiteTest(IkariTestBase, LazyTestCase):
+class IkariSiteTestBase(object):
+
+    def __init__(self, *args, **kwargs):
+        connection.creation.create_test_db(autoclobber=True)
+        super(IkariSiteTestBase, self).__init__(*args, **kwargs)
 
     def test_master_site(self):
         # master site should be accesible.
@@ -76,21 +96,23 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_site_with_port(self):
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=True,
                           is_public=True,
                           owner=self.user_owner)
         response = self.client.get(
-            "/", **self.get_headers(settings.IKARI_MASTER_DOMAIN+":80"))
+            "/", **self.get_headers(settings.IKARI_MASTER_DOMAIN + ":80"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context.get("request").META.get("HTTP_HOST"), settings.IKARI_MASTER_DOMAIN+":80")
+        self.assertEqual(response.context.get("request").META.get(
+            "HTTP_HOST"), settings.IKARI_MASTER_DOMAIN + ":80")
 
         response = self.client.get(
-            "/", **self.get_headers(site.fqdn+":8000"))
+            "/", **self.get_headers(site.fqdn + ":8000"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context.get('Site').name, site.name)
-        self.assertEqual(response.context.get("request").META.get("HTTP_HOST"), site.fqdn+":8000")
+        self.assertEqual(response.context.get(
+            "request").META.get("HTTP_HOST"), site.fqdn + ":8000")
 
     def test_threading_conflicts(self):
         # master site should be accesible.
@@ -102,7 +124,8 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
         response = self.client.get(
             "/", **self.get_headers(settings.IKARI_MASTER_DOMAIN))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context.get("request").META.get("HTTP_HOST"), settings.IKARI_MASTER_DOMAIN)
+        self.assertEqual(response.context.get("request").META.get(
+            "HTTP_HOST"), settings.IKARI_MASTER_DOMAIN)
 
         response = self.client.get(
             "/", **self.get_headers(site.fqdn))
@@ -112,10 +135,11 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
         response = self.client.get(
             "/", **self.get_headers(settings.IKARI_MASTER_DOMAIN))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context.get("request").META.get("HTTP_HOST"), settings.IKARI_MASTER_DOMAIN)
+        self.assertEqual(response.context.get("request").META.get(
+            "HTTP_HOST"), settings.IKARI_MASTER_DOMAIN)
 
     def test_site_inactive(self):
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=False,
                           is_public=False,
@@ -124,7 +148,7 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
         self.assertEquals(site.is_public, False)
 
     def test_site_private(self):
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=True,
                           is_public=False,
@@ -133,7 +157,7 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
         self.assertEquals(site.is_public, False)
 
     def test_site_public(self):
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=True,
                           is_public=True,
@@ -142,7 +166,7 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
         self.assertEquals(site.is_public, True)
 
     def test_inactive_site_guest(self):
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=False,
                           is_public=False,
@@ -155,7 +179,7 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
         self.assertLocationEquals(response, self.inactive_url)
 
     def test_inactive_site_admin(self):
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=False,
                           is_public=False,
@@ -171,7 +195,7 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
             self.assertEquals(response.template_name[0], 'ikari/site.html')
 
     def test_inactive_site_owner(self):
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=False,
                           is_public=False,
@@ -185,7 +209,7 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
             self.assertLocationEquals(response, self.inactive_url)
 
     def test_private_site_guest(self):
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=True,
                           is_public=False,
@@ -198,7 +222,7 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
         self.assertLocationEquals(response, self.private_url)
 
     def test_private_site_admin(self):
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=True,
                           is_public=False,
@@ -212,7 +236,7 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
             self.assertEquals(response.template_name[0], 'ikari/site.html')
 
     def test_private_site_owner(self):
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=True,
                           is_public=False,
@@ -228,7 +252,7 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
             self.assertEquals(response.template_name[0], 'ikari/site.html')
 
     def test_public_site_guest(self):
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=True,
                           is_public=True,
@@ -240,7 +264,7 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
         self.assertEquals(response.template_name[0], 'ikari/site.html')
 
     def test_public_site_admin(self):
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=True,
                           is_public=True,
@@ -256,7 +280,7 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
             self.assertEquals(response.template_name[0], 'ikari/site.html')
 
     def test_public_site_owner(self):
-        site = mummy.make(settings.IKARI_SITE_MODEL,
+        site = mummy.make(self.site_model,
                           name=self.site_name,
                           is_active=True,
                           is_public=True,
@@ -270,3 +294,28 @@ class IkariSiteTest(IkariTestBase, LazyTestCase):
             self.assertEquals(response.status_code, 200)
             # it should render the base usersite template
             self.assertEquals(response.template_name[0], 'ikari/site.html')
+
+
+# class BasicIkariTest(IkariTestBase, IkariSiteTestBase, LazyTestCase):
+#     """
+#       Normal tests
+#     """
+
+CustomSiteSettings = {
+    "IKARI_SITE_MODEL": 'tests.site.SomeCustomisedSite',
+    "DATABASES": {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': 'customised_sitet',
+        }
+    }
+}
+
+
+@override_settings(**CustomSiteSettings)
+class IkariCustomSiteTest(IkariSiteTestBase, IkariTestBase, LazyTestCase):
+
+    """
+        This test case covers the scenario where a project integrator
+        will specify their own IKARI_SITE_MODEL.
+    """

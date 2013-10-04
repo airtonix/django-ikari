@@ -3,7 +3,8 @@ import logging
 
 from django.core.cache import cache
 
-from .conf import settings, null_handler
+from .conf import settings
+from .utils import null_handler
 
 
 logger = logging.getLogger(__name__)

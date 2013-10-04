@@ -17,6 +17,5 @@ setup(name="django-ikari",
       ],
       tests_require=[
           'django-easytests',
-          'model-mummy',
       ]
       )

@@ -5,13 +5,15 @@ from django.core.urlresolvers import reverse
 from django.utils.cache import patch_vary_headers
 from django.utils.encoding import iri_to_uri
 
-from .conf import settings, null_handler
-from .loader import get_model
+from .conf import settings
+from .utils import null_handler
+from .loader import get_model, load_class
 from . import signals
+
 
 logger = logging.getLogger(__name__)
 logger.addHandler(null_handler)
-IkariSiteModel = get_model(*settings.IKARI_SITE_MODEL.split("."))
+IkariSiteModel = load_class(settings.IKARI_SITE_MODEL)
 
 
 class DomainsMiddleware:
@@ -35,14 +37,9 @@ class DomainsMiddleware:
         # if it's the MASTER_DOMAIN, or there isn't a host set then bail out now.
 
         if not host or host != settings.IKARI_MASTER_DOMAIN:
-
             request.urlconf = settings.IKARI_SITE_URLCONF
 
             try:
-                site = IkariSiteModel.objects.get(fqdn__iexact=host)
-                site = IkariSiteModel.objects.get(fqdn__iexact=host)
-                site = IkariSiteModel.objects.get(fqdn__iexact=host)
-                site = IkariSiteModel.objects.get(fqdn__iexact=host)
                 site = IkariSiteModel.objects.get(fqdn__iexact=host)
                 request.site = site
 

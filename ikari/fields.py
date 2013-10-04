@@ -9,7 +9,8 @@ from django.utils.translation import ugettext as _
 from django.utils.safestring import SafeUnicode
 from django.core.urlresolvers import reverse, reverse_lazy
 
-from .conf import settings, null_handler
+from .conf import settings
+from .utils import null_handler
 
 
 logger = logging.getLogger(__name__)

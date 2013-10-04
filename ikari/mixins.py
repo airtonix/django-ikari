@@ -4,7 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.views.generic import View
 from django.utils.decorators import method_decorator
 
-from .conf import settings, null_handler
+from .conf import settings
+from .utils import null_handler
 from . import models
 
 

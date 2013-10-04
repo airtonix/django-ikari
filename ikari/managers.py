@@ -1,7 +1,8 @@
 from django.db import models
 from django.db.models.fields import FieldDoesNotExist
 
-from .conf import settings, null_handler
+from .conf import settings
+from .utils import null_handler
 
 
 class CurrentSiteManager(models.Manager):

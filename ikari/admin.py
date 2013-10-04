@@ -1,20 +1,23 @@
 import logging
 
 from django.contrib import admin
-from django import forms
-from django.utils.translation import ugettext_lazy as _
-
 import whois
 
-from .conf import settings, null_handler
-from .loader import get_model, load_class
-from .forms import IkariSiteAdminForm
+from django import forms
+from django.utils.translation import ugettext_lazy as _
+from django.db.models.loading import get_model
+from django.utils.datastructures import SortedDict
+
 from . import models
+from .loader import load_class
+from .conf import settings
+from .utils import null_handler
+from .forms import IkariSiteAdminForm
 
-
+site_model_string = settings.IKARI_SITE_MODEL
 logger = logging.getLogger(__name__)
 logger.addHandler(null_handler)
-IkariSiteModel = get_model(*settings.IKARI_SITE_MODEL.split("."))
+IkariSiteModel = load_class(settings.IKARI_SITE_MODEL)
 
 
 class IkariSiteAdmin(admin.ModelAdmin):

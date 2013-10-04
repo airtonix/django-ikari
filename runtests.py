@@ -3,7 +3,7 @@ from djeasytests.testsetup import TestSetup, default_settings
 
 
 default_settings.update(dict(
-    ROOT_URLCONF='unit_tests.urls',
+    ROOT_URLCONF='tests.urls',
     DATABASES={
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -18,7 +18,7 @@ default_settings.update(dict(
         'django.contrib.sites',
         'django.contrib.staticfiles',
         'ikari',
-        'unit_tests'
+        'tests'
     ],
     MIDDLEWARE_CLASSES=[
         'django.middleware.common.CommonMiddleware',
@@ -47,7 +47,7 @@ default_settings.update(dict(
     IKARI_USERSITE_URLCONF='ikari.urls.sites',
 ))
 
-unittests = TestSetup(appname='unit_tests',
+unittests = TestSetup(appname='tests',
                       default_settings=default_settings)
 
 if __name__ == '__main__':
