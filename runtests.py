@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from djeasytests.testsetup import TestSetup, default_settings
 
-
 default_settings.update(dict(
     ROOT_URLCONF='tests.urls',
     DATABASES={
@@ -46,9 +45,8 @@ default_settings.update(dict(
     IKARI_ACCOUNT_URL='ikari.urls.private',
     IKARI_USERSITE_URLCONF='ikari.urls.sites',
 ))
-
-unittests = TestSetup(appname='tests',
+testsetup = TestSetup(appname='tests',
                       default_settings=default_settings)
 
-if __name__ == '__main__':
-    unittests.run('tests')
+if __name__ == "__main__":
+    testsetup.run('shell')
