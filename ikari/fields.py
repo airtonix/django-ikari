@@ -9,18 +9,21 @@ from django.utils.translation import ugettext as _
 from django.utils.safestring import SafeUnicode
 from django.core.urlresolvers import reverse, reverse_lazy
 
-from . import settings
+from .conf import settings
+from .utils import null_handler
+
 
 logger = logging.getLogger(__name__)
-logger.addHandler(settings.null_handler)
+logger.addHandler(null_handler)
 
 
 class SubdomainInput(forms.TextInput):
+
     def render(self, *args, **kwargs):
         self.attrs = {"style": "width: 10em; display:inline-block;"}
         return SafeUnicode(
-            super(SubdomainInput, self).render(*args,**kwargs)
-            + app_settings.SUBDOMAIN_ROOT)
+            super(SubdomainInput, self).render(*args, **kwargs)
+            + settings.IKARI_SUBDOMAIN_ROOT)
 
 
 class UUIDField(models.CharField):
@@ -38,4 +41,3 @@ class UUIDField(models.CharField):
             return value
         else:
             return super(models.CharField, self).pre_save(model_instance, add)
-

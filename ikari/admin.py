@@ -1,81 +1,62 @@
 import logging
 
 from django.contrib import admin
+import whois
+
 from django import forms
+from django.utils.translation import ugettext_lazy as _
+from django.db.models.loading import get_model
+from django.utils.datastructures import SortedDict
 
-from . import settings
 from . import models
+from .loader import load_class
+from .conf import settings
+from .utils import null_handler
+from .forms import IkariSiteAdminForm
 
+site_model_string = settings.IKARI_SITE_MODEL
 logger = logging.getLogger(__name__)
-logger.addHandler(settings.null_handler)
-
-class DomainForm(forms.ModelForm):
-    class Meta:
-        model = models.Domain
-
-    def clean_domain(self):
-        domain = self.cleaned_data['domain']
-        if domain == '':
-            domain = None
-        return domain
+logger.addHandler(null_handler)
 
 
-class DomainAdmin(admin.ModelAdmin):
+class IkariSiteAdmin(admin.ModelAdmin):
 
-    form = DomainForm
+    form = IkariSiteAdminForm
 
-    def anchored_on(instance):
-        return u"{thing} ({thing_type})".format(
-            thing=instance.anchored_on,
-            thing_type=instance.anchored_on.__class__.__name__
-        )
+    def verify_site(instance, request, queryset):
+        results = []
+        for site in queryset:
+            logger.debug("attempting to verify site:", site)
+            results.append(whois.query(site.fqdn))
+        # TODO: redirect to report page, print whois results.
 
-    def domain(instance):
-        if instance.subdomain:
-            return u"{domain}{tld}".format(
-                domain=instance.subdomain,
-                tld=settings.SUBDOMAIN_ROOT
-            )
-        if instance.domain:
-            return instance.domain
+    verify_site.short_description = 'Query the site txt record for the uuid.'
 
-    def verify_domain(instance, request, queryset):
-        for domain in queryset:
-            logger.debug("attempting to verify domain:", domain)
-    verify_domain.short_description = 'Query the domain txt record for the uuid.'
+    def enable_site(instance, request, queryset):
+        queryset.update(is_active=True)
+    enable_site.short_description = _('Enable the selected sites.')
 
-    def disable_domain(instance, request, queryset):
-        for domain in queryset:
-            domain.is_active = True
-            domain.save()
-    disable_domain.short_description = 'Enable the selected domains.'
+    def disable_site(instance, request, queryset):
+        queryset.update(is_active=False)
+    disable_site.short_description = _('Enable the selected sites.')
 
-    def enable_domain(instance, request, queryset):
-        for domain in queryset:
-            domain.is_active = True
-            domain.save()
-    enable_domain.short_description = 'Enable the selected domains.'
+    def publish_site(instance, request, queryset):
+        queryset.update(is_public=True)
+    publish_site.short_description = _('Make selected sites public.')
 
-    def set_domain_as_primary(instance, request, queryset):
-        groups = {}
-        ambigous_items = []
+    def unpublish_site(instance, request, queryset):
+        queryset.update(is_public=False)
+    unpublish_site.short_description = _('Make selected sites private.')
 
-        for domain in queryset:
-            group = groups.get(domain.anchored_on, [])
-            group.append(domain)
+    def set_site_as_primary(instance, request, queryset):
+        queryset.update(is_primary=True)
+    set_site_as_primary.short_description = 'Make the selected items the primary site for their anchored objects.'
 
-        for key, value in groups.iteritems():
-            if len(value) > 1:
-                ambigous_items = ambigous_items + value
-            else:
-                domain = value[0]
-                domain.anchored_on.anchored_domains.update(is_primary=False)
-                domain.is_primary = True
-                domain.save()
-
-    set_domain_as_primary.short_description = 'Make the selected items the primary domain for their anchored objects.'
-    list_display = (anchored_on, domain, 'is_public', 'is_active', 'is_primary', )
-    actions = [verify_domain, disable_domain, enable_domain, set_domain_as_primary]
+    list_display = ('fqdn', 'is_public', 'is_active', 'is_primary', )
+    actions = [verify_site,
+               disable_site, enable_site,
+               publish_site, unpublish_site,
+               set_site_as_primary]
 
 
-admin.site.register(models.Domain, DomainAdmin)
+admin.site.register(models.Site, IkariSiteAdmin)

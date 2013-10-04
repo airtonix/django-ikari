@@ -3,76 +3,69 @@ import logging
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.utils.cache import patch_vary_headers
-from django.contrib.auth import logout
+from django.utils.encoding import iri_to_uri
 
-from . import models
+from .conf import settings
+from .utils import null_handler
 from . import signals
-from . import settings
-from . import cache
+from . import models
 
 
 logger = logging.getLogger(__name__)
-logger.addHandler(settings.null_handler)
-
-
-def get_domain_list(facet='domain'):
-    return models.Domain.objects.values_list(facet, flat=True)
-
-
-def get_domain(query_dict=None):
-    return models.Domain.objects.get(**query_dict)
+logger.addHandler(null_handler)
 
 
 class DomainsMiddleware:
 
+    def redirect_to_error(self, request, urlname):
+        self.urlconf = settings.ROOT_URLCONF
+        path = reverse(urlname)
+        current_uri = '%s://%s%s' % ('https' if request.is_secure() else 'http',
+                                     settings.IKARI_MASTER_DOMAIN, path)
+
+        return HttpResponseRedirect(iri_to_uri(current_uri))
+
     def process_request(self, request):
-        host = request.META.get('HTTP_HOST', None)
-        if host is None:
-            return
-
+        host = request.get_host()
+        user = getattr(request, 'user', None)
         # strip port suffix if present
-        if settings.PORT_SUFFIX and host.endswith(settings.PORT_SUFFIX):
-            host = host[:-len(settings.PORT_SUFFIX)]
 
-        try:
-            if host.endswith(settings.SUBDOMAIN_ROOT):
-                query_dict = {"subdomain": host[:-len(settings.SUBDOMAIN_ROOT)]}
+        if ":" in host:
+            host = host[:host.index(":")]
+
+        # if it's the MASTER_DOMAIN, or there isn't a host set then bail out now.
+
+        if not host or host != settings.IKARI_MASTER_DOMAIN:
+            request.urlconf = settings.IKARI_SITE_URLCONF
+
+            try:
+                site = models.Site.objects.get(fqdn__iexact=host)
+                request.ikari_site = site
+
+            except models.Site.DoesNotExist:
+                return self.redirect_to_error(request, settings.IKARI_URL_ERROR_DOESNTEXIST)
+
+            is_valid_user = user and user.is_authenticated and user.is_active
+            is_admin = user and is_valid_user and (user.is_superuser or user.is_staff)
+            is_manager = is_valid_user and user in (site.owner, site.get_moderators())
+
+            if not site.is_active and not is_admin:
+                # if it's not active, then only allow staff through
+                return self.redirect_to_error(request, settings.IKARI_URL_ERROR_INACTIVE)
+
+            elif not site.is_public and not (is_admin or is_manager):
+                # if it's not published, then only allow site managers and admin
+                return self.redirect_to_error(request, settings.IKARI_URL_ERROR_PRIVATE)
+
             else:
-                query_dict = {"domain": host}
-
-            domain = cache.get_thing(facet='item', query=host, update=lambda: get_domain(query_dict))
-
-            if settings.CANONICAL_DOMAINS and domain.domain:
-                if str(host) != (domain.domain):
-                    return HttpResponseRedirect(domain.get_absolute_url())
-
-        except models.Domain.DoesNotExist:
-            if host != settings.DEFAULT_DOMAIN:
-                return HttpResponseRedirect(settings.DEFAULT_URL)
-
-        else:
-            request.domain = domain
-            # set up request parameters
-
-            if settings.ACCOUNT_URLCONF:
-                request.urlconf = settings.ACCOUNT_URLCONF
-
-            # force logout of non-member and non-owner from non-public site
-            if hasattr(request.user, 'pk') > 0 and request.user.is_authenticated:
-                # logger.debug(request.user, "is authenticated")
-                can_access = domain.user_can_access(request.user)
-                # logger.debug(request.user, "can_access", can_access)
-                if not can_access:
-                    url = settings.DEFAULT_URL.rstrip("/")
-                    if not domain.is_public:
-                        url = url + reverse('domains-inactive')
-                    logout(request)
-                    return HttpResponseRedirect(url)
-
-            # call request hookanchored_domains
-            for receiver, retval in signals.domain_request.send(sender=request, request=request, domain=domain):
-                if isinstance(retval, HttpResponse):
-                    return retval
+                # other wise, call the 'site_request' signal to allow project level integrated
+                # checks to be performed. requires a HttpResponse type to
+                # successfully continue.
+                for receiver, return_value in signals.site_request.send(sender=DomainsMiddleware, request=request, site=site):
+                    if isinstance(return_value, HttpResponse):
+                        return return_value
+                    else:
+                        return self.redirect_to_error(request, settings.IKARI_URL_ERROR_UNKNOWN)
 
     def process_response(self, request, response):
 
