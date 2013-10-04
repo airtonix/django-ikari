@@ -5,7 +5,7 @@ django-ikari is an application for anchoring configurable
 urlconfs to user configurable subdomains or domains to use
 in software-as-a-service projects.
 
-[![Build Status](https://travis-ci.org/airtonix/django-ikari.png?branch=develop)](https://travis-ci.org/airtonix/django-ikari)
+[![Build Status](https://travis-ci.org/airtonix/django-ikari.png?branch=master)](https://travis-ci.org/airtonix/django-ikari)
 
 ## Table of Contents
 
