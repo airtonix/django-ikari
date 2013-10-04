@@ -41,7 +41,7 @@ class DomainsMiddleware:
 
             try:
                 site = IkariSiteModel.objects.get(fqdn__iexact=host)
-                request.site = site
+                request.ikari_site = site
 
             except IkariSiteModel.DoesNotExist:
                 return self.redirect_to_error(request, settings.IKARI_URL_ERROR_DOESNTEXIST)

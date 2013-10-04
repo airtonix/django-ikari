@@ -14,14 +14,23 @@ MESSAGES = {
 
 
 class IkariAppConf(AppConf):
-    ACCOUNT_URLCONF = 'ikari.urls.private'
-    SITE_URLCONF = 'ikari.urls.sites'
     # This needs to point at the domain
     # of your main project, typically
     # the place where you'd have forms that
     # process payments, login users, process
     # beta invites etc.
     MASTER_DOMAIN = None
+
+    # routes which define paths to views to
+    # allow users to manag their site(s)
+    ACCOUNT_URLCONF = 'ikari.urls.private'
+
+    # routes that are anchored to the root
+    # of users sites. this urlconf will replace
+    # your ROOT_URLCONF setting when a requested
+    # hostname matches an active ( and published
+    # if the user is a site member) site.
+    SITE_URLCONF = 'ikari.urls.sites'
 
     # Url to redirect visitors to when they
     # land on a subdomain that isn't linked
@@ -44,7 +53,6 @@ class IkariAppConf(AppConf):
     # See ikari.backends.domain_verification for a list of
     # existing backends
     DOMAIN_VERIFICATION_BACKEND = 'ikari.backends.domain_verification.FQDNVerificationBackend'
-    USE_SSO = False
 
     CACHE_KEY_PREFIX = u'ikari:'
     CACHE_KEY_ALL = u'domain:all'
@@ -79,13 +87,6 @@ class IkariAppConf(AppConf):
                 MESSAGES.get('MissingSettings').format("SITE_URLCONF"))
         return value
 
-    def configure_use_sso(self, value):
-        try:
-            import sso
-            return True
-        except ImportError as error:
-            return False
-
     # def configure_site_model(self, value):
     #     if not value:
     #         raise exceptions.ImproperlyConfigured(
@@ -96,11 +97,6 @@ class IkariAppConf(AppConf):
     #         raise exceptions.ImproperlyConfigured(
     #             MESSAGES.get("FailedImportTest").format(value))
     #     return value
-
-    def configure_port_suffix(self, value):
-        if not value and hasattr(settings, 'IKARI_PORT'):
-            return u':{}'.format(settings.IKARI_PORT)
-        return value
 
     def configure_master_domain(self, value):
         if not hasattr(settings, 'IKARI_MASTER_DOMAIN'):

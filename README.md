@@ -7,202 +7,207 @@ in software-as-a-service projects.
 
 [![Build Status](https://travis-ci.org/airtonix/django-ikari.png?branch=develop)](https://travis-ci.org/airtonix/django-ikari)
 
-Table of Contents
-=================
-1 Installation
-2 Settings
-3 Models
-    3.1 Permissions
-4 Middleware
-5 Views
-6 URLs
-7 Templates
-8 License
+## Table of Contents
+
+1. Installation
+2. Settings
+3. Models
+  * Permissions
+4. Middleware
+5. Views
+6. URLs
+7. Templates
+8. License
 
 
-1 Installation
-~~~~~~~~~~~~~~
+### 1 Installation
 
  `pip install django-ikari`
 
-  In order to use application, add `ikari' to INSTALLED_APPS in
+  In order to use application, add `ikari' to `INSTALLED_APPS` in
   Django project `settings.py' file,
-  `ikari.middleware.DomainsMiddleware' to MIDDLEWARE_CLASSES
+  `ikari.middleware.DomainsMiddleware' to `MIDDLEWARE_CLASSES`
   after `AuthenticationMiddleware', and configure application settings
   described in the next section.
 
-2 Settings
-~~~~~~~~~~
-  Following Django settings are read by the application:
-  - `DOMAINS_ACCOUNT_URLCONF' - if set, `request.urlconf' is set to
-    this value when Domain's domain is accessed.  This breaks
-    django-debug-toolbar and misleads reverse URL resolver (main
-    urlconf is always used for reverse URL resolving).
-  - `DOMAINS_DEFAULT_DOMAIN' - Default domain name, on which "main"
-    (non-user) site is hosted.  Used to prevent redirection to
-    `DOMAINS_DEFAULT_URL' when `DomainsMiddleware' is used both
-    on accounts' sites and main site.  Also used to construct default
-    value of `DOMAINS_DEFAULT_URL' when it is not set.
-  - `DOMAINS_DEFAULT_URL' - URL to redirect to when user agent
-    refers to site with an unknown domain (not registered in any of
-    accounts).  When not set, a URL is constructed from
-    `DOMAINS_DEFAULT_DOMAIN' or current Site object's domain and
-    `DOMAINS_PORT'.
-  - `DOMAINS_IP' - if set, value is used to verify custom domains
-    in `DomainForm'.  It can be set to a string (literal
-    'aa.bb.cc.dd' value that is compared to `sockets.gethostbyname()'
-    result), or, for more complex deployments, it can be a function
-    that will receive IP as returned by `sockets.gethostbyname()'
-  - `DOMAINS_PORT' - can be set to custom port that will be used in
-    Domain site URLs.  This way, developer can successfully use
-    Domains on e.g. 127.0.0.1:8000.
-  - `DOMAINS_ROOT_DOMAIN' - root domain for subdomains (with or
-    without leading dot).  Must be set.
-  - `DOMAINS_SUBDOMAIN_STOPWORDS' - tuple of regular expressions
-    ([http://docs.python.org/library/re.html]) that cannot be used as
-    subdomain names.  Default is `("^www$",)'.  Use this to stop users
-    from e.g. using reserved domain names or using profanities as
-    their domain name.  Expressions are tested using `re.search', not
-    `re.match', so without using `^' anchor they can match anywhere in
-    the domain name.
-  - `DOMAINS_THEMES' - a sequence of (codename, name) pairs
-    indicating available themes for user sites.
-  - `DOMAINS_USE_SSO' - use django-sso when redirecting user to
-    newly created site.  Default is True if django-sso is available,
-    False otherwise.
-  - `DOMAINS_USERSITE_URLCONF' - name of URLconf module for user
-    sites.  This is used by Domain instances' get_absolute_url()
-    method.
-
-3 Models
-~~~~~~~~
-  Application defines one model, `Domain'.  Model has three fields:
-  - `owner', OneToOneField reference to
-    `django.contrib.auth.models.User' model, which holds user owning
-    the account;
-  - `members', ManyToManyField reference to
-    `django.contrib.auth.models.User' model, which holds account
-    members;
-  - `domain', name of custom full domain for the site, changeable by
-    user;
-  - `subdomain', a sub-domain of `DOMAINS_ROOT_DOMAIN', not
-    editable by user;
-  - `is_public', boolean.  If True (default), DomainMiddleware will
-    allow any `auth.User' to log in to Domain's account; if False,
-    only users that are Domain members will be allowed;
-  Class has one class attribute, `subdomain_root', which contains root
-  for subdomains as in `DOMAINS_ROOT_DOMAIN' setting description,
-  always with leading dot.  This attribute should not be written.
-
-  Model defines `get_absolute_url(path = '/', args = (), kwargs = {})'
-  method, which returns link to configured domain
-  ([http://subdomain.root_domain/path] if `domain' is None,
-  [http://domain/path] otherwise).  Optional path can be either an
-  absolute path or, if `settings.DOMAINS_USERSITE_URLCONF' is set,
-  a name, args and kwargs for reverse URL lookup.
-
-  Two methods are defined, `add_member(user)' and
-  `remove_member(user)' to respectively add or remove `user' from
-  `members' and send out `domains.signals.add_member' or
-  `domains.signals.remove_member' with additional `user'
-  parameter.
-
-3.1 Permissions
-===============
-   - `can_set_custom_domain' enables setting `is_subdomain' to `True'
-     by the account owner.  If Domain owner does not have such
-     permission, `account_detaul' view hides checkbox for
-     `is_subdomain', and on form validation `is_subdomain' field is
-     unconditionally set to `True';
-   - `can_set_public_status' does the same for `is_public' field.
-
-4 Middleware
-~~~~~~~~~~~~
-  `domains.middleware.DomainsMiddleware' looks at
-  `request.META['HTTP_HOST']' and, if it matches any `Domain' model
-  instance:
-  - sets `request.domain' to that instance (it can be later used by
-    views and, with `request' context processor, in templates);
-  - immediately logs out (and redirects to reverse URL lookup of
-    `domains_not_a_member') any `auth.models.User' that is not this
-    account's owner or memeber, unless `request.domain.is_public'
-    is true;
-  - if `DOMAINS_ACCOUNT_URLCONF' setting is set, sets
-    `request.urlconf' to its value, allowing single project to display
-    different URL hierarchies for main site and account sites;
-
-    *WARNING*: setting `request.urlconf' doesn't fit well with reverse
-    URL lookups (those will still be made against root urlconf),
-    django-debug-toolbar, and probably other things as well. For
-    maximum reliability, consider running two separate projects on
-    single database: one for "main" site, other for account domains,
-    or use single urlconf for both;
-  - send signal `domains.signals.domain_request' and if any
-    receiver returns an instance of `HttpResponse', returns this
-    response instead of actual page.  This can be used for
-    e.g. displaying error message and not allowing to log into expired
-    accounts.
-
-  If current domain doesn't match any of existing Domain instances
-  and is not `DOMAINS_DEFAULT_DOMAIN', middleware redirects user to
-  `DOMAINS_DEFAULT_DOMAIN'.
-
-5 Views
-~~~~~~~
-  - `domains.views.create_account' - if logged in user does not
-    have a Domain, displays a form to create a new one or accepts
-    results of this form.  After accepting form and creating new
-    account, redirects user to that account, using django-sso if
-    available.  It is not configured in default `urls.py' and should
-    be added directly in main site's urlconf.
-  - `domains.views.account_detail' - displays using
-    `domains/account_detail.html' template and validates
-    `domains.forms.DomainForm' form, which enables user to
-    configure account's domain.  In supplied `urls.py' this view is
-    named `domains_account_detail'.
-  - `domains.views.claim_account' - if `domain.owner' is NULL,
-    logged in user can "claim" the account, i.e. click a button
-    directing to this view, which will send an e-mail to
-    `settings.MANAGERS'.  This view should be called with a POST
-    request.  In default `urls.py' this view is named
-    `domains_claim_account'.
-  - `domains.views.remove_member' - for Domain_owner, with
-    `user_id' parameter set, this post will remove user with supplied
-    ID from the member list.  This view should be called with a POST
-    request.  In default `urls.py' this view is called
-    `domains.views.remove_member'.
-
-6 URLs
-~~~~~~
-  In supplied urlconf, `domains.urls', one external URL is
-  configured: root for `account_detail' view.  More URLs are
-  configured for various POST actions.  This is intended to be
-  included in the subdomain sites' urlconf.
-
-  In main site a link to create account form should be used.  Account
-  is created by view `domains.views.create_account'.  Sample
-  urlconf line is:
-   (r'^accounts/create-site/$', 'domains.views.create_account'),
-
-7 Templates
-~~~~~~~~~~~
-  Application in default setup needs two templates:
-  - `domains/account_detail.html' called by `account_detail' view.
-    Receives two arguments:
-    - `object' - edited Domain instance, and
-    - `form' - DomainForm instance to display.
-  - `domains/create_account.html' called by `create_account' view.
-    Receives one argument, `form', holding an instance of
-    DomainCreateForm.
-  - `domains/claim_account_subject.txt' and
-    `domains/claim_account_email.txt' - these templates are used by
-    `claim_account' view to create an e-mail to MANAGERS.  This
-    templates receive three arguments:
-    - `user' - user that is sending the claim,
-    - `domain' - an account that is claimed,
-    - `site' - `sites.Site' object for current site.
+### 2 Settings
 
 
-8 License
-~~~~~~~~~~
-  This project is licensed on terms of GPL (GPL-LICENSE.txt) licenses. 
+#### IKARI_MASTER_DOMAIN
+
+This needs to point at the domain
+of your main project, typically
+the place where you'd have forms that
+process payments, login users, process
+beta invites etc.
+
+#### IKARI_ACCOUNT_URLCONF
+
+routes which define paths to views to
+allow users to manage their site(s)
+
+#### IKARI_SITE_URLCONF
+
+routes that are anchored to the root
+of users sites. this urlconf will replace
+your ROOT_URLCONF setting when a requested
+hostname matches an active ( and published
+if the user is a site member) site.
+
+#### IKARI_URL_ERROR_*
+
+* IKARI_URL_ERROR_DOESNTEXIST
+* IKARI_URL_ERROR_PRIVATE
+* IKARI_URL_ERROR_INACTIVE
+* IKARI_URL_ERROR_UNKNOWN
+
+Url to redirect visitors to when they
+land on a subdomain that isn't linked
+to a ikari site.
+
+#### IKARI_SUBDOMAIN_ROOT
+
+if user defines a valid whole word then it is joined to
+this. Defaults to something like "."+`IKARI_MASTER_DOMAIN`
+
+#### IKARI_SITE_MODEL
+
+a python import path to your customised IkariSite model.
+you can subclass the abstract `ikari.models.bases.SiteBase`
+model as a good start.
+
+
+### Experimental Settings
+
+#### IKARI_DOMAIN_VERIFICATION_BACKEND
+
+a python import path to a verification backend that can
+be used to ensure the domain provided by the user satisfies
+your business logic.
+
+#### IKARI_SITE_PERMISSION_GROUPS
+
+Probably only relevant if you use the default provided `ikari.models.default.Site` class.
+Simply provides some role based permissions, although it is recommended that you
+use django-guardian and implement some action based permissions.
+
+
+### 3 Models
+
+Ikari ships with two default models, only one of which is required as defined
+above in your settings as `IKARI_SITE_MODEL`.
+
+For the purpose of this section, "site urls" refers to the setting 
+attribute `IKARI_SITE_URLCONF`.
+
+You site model should at least have the following fields and methods:
+
+* `is_public`, boolean.  If True, then Anonymous users will
+  be allowed to view the url routes in the "site urls".
+  If False (default), DomainMiddleware will
+  only allow the following instance of `auth.User':
+  * `is_staff=True` or,
+  * `is_superuser=True`, or
+  * `user in site.get_members()`
+
+* `is_active`, boolean.  If False (default), DomainMiddleware will
+  only allow any `auth.User.is_staff or auth.User.is_superuser` to access the "site urls";
+  if True, then site owners and other related users can also view the "site urls".
+
+
+### 3.1 Permissions
+
+* `can_set_custom_domain' enables setting a domain which is not suffixed
+with the `IKARI_SUBDOMAIN_ROOT` value.
+* `can_set_public_status' does the same for `is_public' field.
+* `can_set_active_status' does the same for `is_active' field.
+
+
+### 4 Middleware
+`ikari.middleware.DomainsMiddleware' looks at
+`request.get_host()` and, if it matches any `ikari.Site` model
+instance:
+* sets `request.ikari_site' to that instance (it can be later used by
+  views and, with `request` context processor, in templates);
+* unless `request.ikari_site.is_public' is true, it immediately logs
+  out (and redirects to reverse URL lookup of
+  `settings.IKARI_URL_ERROR_PRIVATE`) any `auth.User` that does not
+  satisfy this sites get_moderators() method;
+- if `IKARI_SITE_URLCONF' setting is set, sets
+  `request.urlconf' to its value, allowing single project to display
+  different URL hierarchies for main site and account sites;
+  *WARNING*: setting `request.urlconf' doesn't fit well with reverse
+  URL lookups (those will still be made against root urlconf),
+  django-debug-toolbar, and probably other things as well. For
+  maximum reliability, consider running two separate projects on
+  single database: one for "main" site, other for account domains,
+  or use single urlconf for both;
+- send signal `ikari.signals.site_request' and if any
+  receiver returns an instance of `HttpResponse`, returns this
+  response instead of actual page.  This can be used for
+  e.g. displaying error message and not allowing to log into expired
+  accounts.
+
+If current domain doesn't match any of existing `ikari.Site` instances
+and is not `IKARI_MASTER_DOMAIN', middleware redirects user to
+`IKARI_MASTER_DOMAIN'.
+
+
+### 5 Views
+
+* `ikari.views.DomainErrorView` : View used to render the templates for each of 
+  * IKARI_URL_ERROR_DOESNTEXIST
+  * IKARI_URL_ERROR_PRIVATE
+  * IKARI_URL_ERROR_INACTIVE
+  * IKARI_URL_ERROR_UNKNOWN
+* `ikari.views.SiteHomeView` : Main view to render an `ikari.Site`
+* `ikari.views.SiteUpdateView` : Allows authorised users to update their site details.
+* `ikari.views.SiteCreateView` : Allows authorised users to create their site.
+
+
+### 6 Signals
+
+* `ikari.signals.site_request`: fired after default access rules satisfied but before delivery
+of site homepage
+* `ikari.signals.site_created`: fired after a new `ikari.Site` is created.
+* `ikari.signals.site_updated`: fired after an `ikari.Site` is updated.
+* `ikari.signals.site_deleted`: fired after an `ikari.Site` is deleted.
+
+### 7 URLs
+
+##### `ikari.urls.errors`
+
+Include this somewhere in your main site urlconf. example:
+```
+...
+url(r'^sites/error/', include('ikari.urls.errors')),
+...
+```
+
+##### `ikari.urls.private`
+
+Include this somewhere in your main site urlconf. example:
+```
+...
+url(r'^users/sites/', include('ikari.urls.private')),
+...
+```
+
+##### `ikari.urls.sites`
+
+The default urlconf which provides the `ikari.views.SiteHomeView`.
+
+
+### 8 Templates
+Ikari:
+- `ikari/site-update.html` called by `ikari.views.SiteUpdateView` view.
+  Receives two arguments:
+  - `Site` - `ikari.Site` instance, and
+  - `form` - `forms.IkariSiteForm` instance to display.
+- `ikari/site-create.html` called by `ikari.views.SiteCreateView` view.
+  Receives one argument, `form`, holding an instance of
+  `ikari.forms.IkariSiteForm`.
+
+
+### 9 License
+  This project is licensed on terms of GPL (GPL-LICENSE.txt) licenses.
