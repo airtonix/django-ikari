@@ -1,5 +1,5 @@
-Django Anchored Domains
-==========================
+Django Ikari
+============
 
 django-ikari is an application for anchoring configurable
 urlconfs to user configurable subdomains or domains to use
@@ -9,6 +9,7 @@ in software-as-a-service projects.
 
 ## Table of Contents
 
+0. Roadmap
 1. Installation
 2. Settings
 3. Models
@@ -20,6 +21,36 @@ in software-as-a-service projects.
 8. URLs
 9. Templates
 10. License
+
+
+### 0 Roadmap
+
+As of 0.0.7 django-ikari is able to drop in and serve homepages for
+your user assigned domains/subdomains.
+
+However, there are some critical aspects missing:
+
+1. *authenticate domain ownership*, without which could lead to a denial
+of service by your other sass users. Ideally this would be either of:
+  a. email verification sent to an address discovered via whois, or
+  b. by prompting the user to modify/create a unique-hard-to-guess txt
+     record on their dns server for the domain.
+2. *claim form and view*, presented on the DoesNotExist error template when
+a user is logged in, triggering the behaviour in #1 above.
+
+Non critical, but perhaps nice to have would be :
+
+1. *object level permissions*: ensuring there is some consideration given
+towards django-guardian integration.
+
+Finally some out of scope features that probably should be integrated at
+your projects level instead of here in the application:
+
+1. *themes and assets per site*, subclassing the `ikari.models.bases.BaseSite` and
+associating any functionality/relationship to assets should occur there.
+2. *metrics and dashboard display*, you can collect metrics via the `ikari.signals.site_request`
+then display them on a user dashboard that you more than likely already have.
+3. *organisation and site membership*: django-organisations is great for this.
 
 
 ### 1 Installation
@@ -99,7 +130,7 @@ use django-guardian and implement some action based permissions.
 Ikari ships with two default models, only one of which is required as defined
 above in your settings as `IKARI_SITE_MODEL`.
 
-For the purpose of this section, "site urls" refers to the setting 
+For the purpose of this section, "site urls" refers to the setting
 attribute `IKARI_SITE_URLCONF`.
 
 You site model should at least have the following fields and methods:
@@ -157,7 +188,7 @@ and is not `IKARI_MASTER_DOMAIN', middleware redirects user to
 
 ### 5 Views
 
-* `ikari.views.DomainErrorView` : View used to render the templates for each of 
+* `ikari.views.DomainErrorView` : View used to render the templates for each of
   * IKARI_URL_ERROR_DOESNTEXIST
   * IKARI_URL_ERROR_PRIVATE
   * IKARI_URL_ERROR_INACTIVE
