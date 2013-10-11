@@ -12,7 +12,6 @@ from .conf import settings
 from .utils import null_handler
 from . import models
 from . import fields
-from . import cache
 from . import utils
 
 
