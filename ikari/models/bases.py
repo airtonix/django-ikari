@@ -5,6 +5,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.template.defaultfilters import slugify
 
+from uuidfield import UUIDField
 from ..conf import settings
 from ..utils import null_handler
 from ..loader import load_class, get_model_string
@@ -20,9 +21,7 @@ SITE_MODEL_STRING = get_model_string("Site")
 
 class BaseSite(models.Model):
 
-    uuid = models.CharField(verbose_name=_('UUID'),
-                            blank=True, null=True, max_length=255,
-                            unique=True, default=lambda: str(uuid4()))
+    uuid = UUIDField()
     name = models.CharField(verbose_name=_("Site Name"), max_length=255)
     description = models.TextField(verbose_name=_("Description"))
 
