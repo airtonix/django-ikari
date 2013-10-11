@@ -4,7 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.core import exceptions
 
 from appconf import AppConf
-from .loader import get_model, load_class
+# from .loader import load_class
 
 
 MESSAGES = {
@@ -65,11 +65,13 @@ class IkariAppConf(AppConf):
         'Invalid characters in hostname.  You may only use a-z, 0-9, and "-".')
     ERRORMSG_NOPERMISSION = _('Insufficient permissions.')
 
+    ERROR_TEMPLATENAME = "ikari/error.html"
     # Context used for error templates
     # not used if you're redirecting users to the
     # DEFAULT_URL
-    ERRORCONTEXT_INACTIVE = {'title': _("Domain Inactive"), 'message': _(
-        "Looks like you're trying to access a domain that's inactive")}
+    ERRORCONTEXT_INACTIVE = {
+        'title': _("Domain Inactive"),
+        'message': _("Looks like you're trying to access a domain that's inactive")}
     ERRORCONTEXT_INVALID = {
         'title': _("Domain Invalid"), 'message': _("No such domain registered here")}
     ERRORCONTEXT_PRIVATE = {'title': _("Domain Private"), 'message': _(

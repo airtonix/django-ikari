@@ -20,8 +20,11 @@ class DomainsMiddleware:
     def redirect_to_error(self, request, urlname):
         self.urlconf = settings.ROOT_URLCONF
         path = reverse(urlname)
-        current_uri = '%s://%s%s' % ('https' if request.is_secure() else 'http',
-                                     settings.IKARI_MASTER_DOMAIN, path)
+        current_uri = '{protocol}://{domain}{port}{path}'.format(
+            protocol='https' if request.is_secure() else 'http',
+            domain=settings.IKARI_MASTER_DOMAIN,
+            path=path,
+            port=":{r.port}".format(r=request) if request.port else "")
 
         return HttpResponseRedirect(iri_to_uri(current_uri))
 
@@ -31,9 +34,11 @@ class DomainsMiddleware:
         # strip port suffix if present
 
         if ":" in host:
-            host = host[:host.index(":")]
+            host, port = host.split(":")
+            request.port = port
 
-        # if it's the MASTER_DOMAIN, or there isn't a host set then bail out now.
+        # if it's the MASTER_DOMAIN, or there isn't a host set then bail out
+        # now.
 
         if not host or host != settings.IKARI_MASTER_DOMAIN:
             request.urlconf = settings.IKARI_SITE_URLCONF
@@ -46,15 +51,18 @@ class DomainsMiddleware:
                 return self.redirect_to_error(request, settings.IKARI_URL_ERROR_DOESNTEXIST)
 
             is_valid_user = user and user.is_authenticated and user.is_active
-            is_admin = user and is_valid_user and (user.is_superuser or user.is_staff)
-            is_manager = is_valid_user and user in (site.owner, site.get_moderators())
+            is_admin = user and is_valid_user and (
+                user.is_superuser or user.is_staff)
+            is_manager = is_valid_user and user in (
+                site.owner, site.get_moderators())
 
             if not site.is_active and not is_admin:
                 # if it's not active, then only allow staff through
                 return self.redirect_to_error(request, settings.IKARI_URL_ERROR_INACTIVE)
 
             elif not site.is_public and not (is_admin or is_manager):
-                # if it's not published, then only allow site managers and admin
+                # if it's not published, then only allow site managers and
+                # admin
                 return self.redirect_to_error(request, settings.IKARI_URL_ERROR_PRIVATE)
 
             else:

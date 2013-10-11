@@ -6,8 +6,9 @@
     <body>
         <div class="site-wrapper">
             <header>
-                <h1>{{ Site.name }}</h1>
-                {% block site-header %}{% endblock %}
+                {% block site-header %}
+                    <h1>{{ Site.name }}</h1>
+                {% endblock %}
             </header>
             <article>
                 {% block site-content %}{% endblock %}
