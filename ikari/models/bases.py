@@ -22,7 +22,7 @@ class BaseSite(models.Model):
 
     uuid = models.CharField(verbose_name=_('UUID'),
                             blank=True, null=True, max_length=255,
-                            unique=True, default=lambda: uuid4())
+                            unique=True, default=lambda: str(uuid4()))
     name = models.CharField(verbose_name=_("Site Name"), max_length=255)
     description = models.TextField(verbose_name=_("Description"))
 
