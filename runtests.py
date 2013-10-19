@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-from djeasytests.testsetup import TestSetup, default_settings
+from djeasytests.testsetup import TestSetup, global_settings
 
-default_settings.update(dict(
+global_settings.update(dict(
     ROOT_URLCONF='tests.urls',
     DATABASES={
         'default': {
@@ -36,7 +36,7 @@ default_settings.update(dict(
     IKARI_USERSITE_URLCONF='ikari.urls.sites',
 ))
 testsetup = TestSetup(appname='tests',
-                      default_settings=default_settings)
+                      default_settings=global_settings)
 
 if __name__ == "__main__":
     testsetup.run('test')
