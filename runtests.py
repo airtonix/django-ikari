@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from djeasytests.testsetup import TestSetup, global_settings
 
-global_settings.update(dict(
+settings = dict(
     ROOT_URLCONF='tests.urls',
     DATABASES={
         'default': {
@@ -34,9 +34,10 @@ global_settings.update(dict(
     IKARI_MASTER_DOMAIN='ikari.local',
     IKARI_ACCOUNT_URL='ikari.urls.private',
     IKARI_USERSITE_URLCONF='ikari.urls.sites',
-))
+)
+
 testsetup = TestSetup(appname='tests',
-                      default_settings=global_settings)
+                      default_settings=settings)
 
 if __name__ == "__main__":
     testsetup.run('test')
