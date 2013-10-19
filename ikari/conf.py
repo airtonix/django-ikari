@@ -46,7 +46,23 @@ class IkariAppConf(AppConf):
     # Redirect to master domain on error?
     STRICT_DOMAINS = True
 
+    # if the master domain is different from
+    # the domain holding your tenanted subdomains
+    # put it here
     SUBDOMAIN_ROOT = None
+
+    RESERVED_SUBDOMAINS = (
+
+        'mail',
+        'smtp',
+        'imap',
+        'imaps',
+        'pop3',
+        'webmail',
+
+        'www',
+        'git',
+    )
     SITE_PERMISSION_GROUPS = (
         ('admin', _("Site Administrator")),
         ('moderator', _("Site Moderator")),
