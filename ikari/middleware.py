@@ -28,7 +28,7 @@ class DomainsMiddleware:
             protocol='https' if request.is_secure() else 'http',
             domain=settings.IKARI_MASTER_DOMAIN,
             path=path,
-            port=":{r.port}".format(r=request) if request.port else "")
+            port=":{port}".format(port=request.port) if request.port else "")
 
         return HttpResponseRedirect(iri_to_uri(current_uri))
 
