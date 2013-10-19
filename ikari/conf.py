@@ -43,6 +43,9 @@ class IkariAppConf(AppConf):
     # Redirect users to errorpage when errors happen?
     REDIRECT_ONERROR = True
 
+    # Redirect to master domain on error?
+    STRICT_DOMAINS = True
+
     SUBDOMAIN_ROOT = None
     SITE_PERMISSION_GROUPS = (
         ('admin', _("Site Administrator")),
