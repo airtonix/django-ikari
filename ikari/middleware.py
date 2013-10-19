@@ -20,15 +20,19 @@ class DomainsMiddleware:
     def redirect_to_error(self, request, urlname):
         self.urlconf = settings.ROOT_URLCONF
         path = reverse(urlname)
+        port_str = ''
 
         if not settings.IKARI_STRICT_DOMAINS:
             return
+
+        if hasattr(request, 'port'):
+            port_str = ":{port}".format(port=request.port)
 
         current_uri = '{protocol}://{domain}{port}{path}'.format(
             protocol='https' if request.is_secure() else 'http',
             domain=settings.IKARI_MASTER_DOMAIN,
             path=path,
-            port=":{port}".format(port=request.port) if request.port else "")
+            port=port_str)
 
         return HttpResponseRedirect(iri_to_uri(current_uri))
 
