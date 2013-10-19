@@ -20,6 +20,10 @@ class DomainsMiddleware:
     def redirect_to_error(self, request, urlname):
         self.urlconf = settings.ROOT_URLCONF
         path = reverse(urlname)
+
+        if not settings.IKARI_STRICT_DOMAINS:
+            return
+
         current_uri = '{protocol}://{domain}{port}{path}'.format(
             protocol='https' if request.is_secure() else 'http',
             domain=settings.IKARI_MASTER_DOMAIN,
@@ -36,6 +40,8 @@ class DomainsMiddleware:
         if ":" in host:
             host, port = host.split(":")
             request.port = port
+
+        request.host = host
 
         # if it's the MASTER_DOMAIN, or there isn't a host set then bail out
         # now.

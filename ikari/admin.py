@@ -38,7 +38,7 @@ class IkariSiteAdmin(admin.ModelAdmin):
 
     def disable_site(instance, request, queryset):
         queryset.update(is_active=False)
-    disable_site.short_description = _('Enable the selected sites.')
+    disable_site.short_description = _('Disable the selected sites.')
 
     def publish_site(instance, request, queryset):
         queryset.update(is_public=True)

@@ -26,8 +26,8 @@ class BaseSite(models.Model):
     description = models.TextField(verbose_name=_("Description"))
 
     fqdn = models.CharField(verbose_name=_('Domain Name'),
-                            help_text=_("Either a) Fully qualified domain name <a href='http://en.wikipedia.org/wiki/Fully_qualified_domain_name'>help</a>, or b) a slugified word as a subdomain of {}, or c) blank which will use the slugified name.".format(
-                                settings.IKARI_MASTER_DOMAIN)),
+                            help_text=_("Either a) Fully qualified domain name <a href='http://en.wikipedia.org/wiki/Fully_qualified_domain_name'>help</a>, or b) a slugified word as a subdomain of {master_domain}, or c) blank which will use the slugified name.".format(
+                                master_domain=settings.IKARI_MASTER_DOMAIN)),
                             blank=True, null=True, max_length=255, unique=True)
 
     is_public = models.BooleanField(verbose_name=_('Is public'), default=False)
